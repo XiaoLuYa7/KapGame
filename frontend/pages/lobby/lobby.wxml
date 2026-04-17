@@ -1,0 +1,40 @@
+<!--pages/lobby/lobby.wxml-->
+<view class="container">
+  <view class="card">
+    <view style="text-align: center; margin-bottom: 40rpx;">
+      <text style="font-size: 48rpx; font-weight: bold;">背锅大作战</text>
+    </view>
+
+    <view style="text-align: center; margin-bottom: 60rpx;">
+      <text style="font-size: 32rpx; color: #666;">
+        欢迎, {{username}}
+      </text>
+    </view>
+
+    <view style="text-align: center;">
+      <button class="btn" bindtap="startGame">
+        开始匹配
+      </button>
+
+      <button
+        style="background-color: #e74c3c; margin-top: 40rpx;"
+        class="btn"
+        bindtap="logout"
+      >
+        退出登录
+      </button>
+    </view>
+  </view>
+
+  <view class="card">
+    <text style="font-size: 32rpx; font-weight: bold;">游戏规则</text>
+    <view style="margin-top: 20rpx;">
+      <text style="color: #666; line-height: 1.6;">
+        1. 每人5张手牌\n
+        2. 轮流行动：出牌或抽牌\n
+        3. 抽到爆炸卡时：\n   - 有拆除卡 → 抵消\n   - 有转移卡 → 转给别人\n   - 否则 → 淘汰\n
+        4. 最后存活者胜利
+      </text>
+    </view>
+  </view>
+</view>

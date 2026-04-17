@@ -1,0 +1,380 @@
+/* pages/home/home.wxss */
+.home-container {
+  min-height: 100vh;
+  background: linear-gradient(180deg, #f5f7fa 0%, #e4e8f0 100%);
+  padding: 20rpx 30rpx 40rpx;
+  box-sizing: border-box;
+}
+
+/* 用户信息区域 */
+.user-section {
+  display: flex;
+  align-items: center;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 24rpx;
+  padding: 30rpx;
+  margin-bottom: 40rpx;
+  color: white;
+  position: relative;
+  box-shadow: 0 10rpx 30rpx rgba(102, 126, 234, 0.3);
+}
+
+.user-avatar {
+  position: relative;
+  margin-right: 30rpx;
+}
+
+.user-avatar .avatar-emoji {
+  display: block;
+  width: 120rpx;
+  height: 120rpx;
+  border-radius: 50%;
+  border: 4rpx solid rgba(255, 255, 255, 0.8);
+  background-color: #fff;
+  font-size: 60rpx;
+  text-align: center;
+  line-height: 120rpx;
+}
+
+.user-avatar image {
+  width: 120rpx;
+  height: 120rpx;
+  border-radius: 50%;
+  border: 4rpx solid rgba(255, 255, 255, 0.8);
+  background-color: #fff;
+}
+
+.avatar-badge {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  background-color: #f39c12;
+  color: white;
+  font-size: 20rpx;
+  padding: 4rpx 12rpx;
+  border-radius: 20rpx;
+  font-weight: bold;
+}
+
+.user-info {
+  flex: 1;
+}
+
+.username {
+  font-size: 40rpx;
+  font-weight: bold;
+  margin-bottom: 12rpx;
+}
+
+.rank-info {
+  font-size: 28rpx;
+  margin-bottom: 20rpx;
+  opacity: 0.9;
+}
+
+.rank-label {
+  opacity: 0.8;
+}
+
+.rank-value {
+  font-weight: bold;
+}
+
+.resources {
+  display: flex;
+  gap: 30rpx;
+}
+
+.resource-item {
+  display: flex;
+  align-items: center;
+  font-size: 28rpx;
+}
+
+.resource-icon {
+  margin-right: 10rpx;
+  font-size: 32rpx;
+}
+
+.resource-value {
+  font-weight: bold;
+}
+
+.login-prompt {
+  display: flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.2);
+  padding: 12rpx 24rpx;
+  border-radius: 40rpx;
+}
+
+.login-text {
+  font-size: 28rpx;
+  margin-right: 10rpx;
+}
+
+.login-arrow {
+  font-size: 36rpx;
+  font-weight: bold;
+}
+
+/* 区域标题 */
+.section-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 40rpx 0 24rpx;
+  padding: 0 10rpx;
+}
+
+.title-text {
+  font-size: 36rpx;
+  font-weight: bold;
+  color: #2c3e50;
+  position: relative;
+}
+
+.title-text::before {
+  content: '';
+  position: absolute;
+  left: -10rpx;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 6rpx;
+  height: 32rpx;
+  background: #3498db;
+  border-radius: 3rpx;
+}
+
+.title-more {
+  font-size: 28rpx;
+  color: #7f8c8d;
+}
+
+/* 活动区域 */
+.activities-scroll {
+  white-space: nowrap;
+  margin: 0 -30rpx;
+  padding: 0 30rpx;
+}
+
+.activities-list {
+  display: inline-flex;
+  gap: 24rpx;
+}
+
+.activity-item {
+  display: inline-flex;
+  flex-direction: column;
+  border-radius: 20rpx;
+  width: 200rpx;
+  background: white;
+  box-shadow: 0 6rpx 20rpx rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+}
+
+.activity-image-wrapper {
+  position: relative;
+  width: 200rpx;
+  height: 150rpx;
+  background: #f0f0f0;
+}
+
+.activity-image {
+  width: 200rpx;
+  height: 150rpx;
+}
+
+.activity-image-placeholder {
+  width: 200rpx;
+  height: 150rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.activity-default-icon {
+  font-size: 60rpx;
+}
+
+/* 倒计时徽章 */
+.countdown-badge {
+  position: absolute;
+  top: 8rpx;
+  right: 8rpx;
+  background: rgba(0, 0, 0, 0.7);
+  border-radius: 20rpx;
+  padding: 6rpx 12rpx;
+  display: flex;
+  align-items: center;
+  gap: 4rpx;
+}
+
+.countdown-icon {
+  font-size: 20rpx;
+}
+
+.countdown-text {
+  font-size: 22rpx;
+  color: #fff;
+  font-weight: bold;
+  font-family: monospace;
+}
+
+.activity-info {
+  padding: 16rpx;
+}
+
+.activity-title {
+  font-size: 28rpx;
+  font-weight: bold;
+  color: #2c3e50;
+  margin-bottom: 8rpx;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.activity-type-tag {
+  display: inline-block;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 8rpx;
+  padding: 4rpx 12rpx;
+}
+
+.type-text {
+  font-size: 20rpx;
+  color: white;
+  font-weight: bold;
+}
+
+/* 无活动提示 */
+.empty-activities {
+  text-align: center;
+  padding: 40rpx 0;
+}
+
+.empty-text {
+  font-size: 28rpx;
+  color: #bdc3c7;
+}
+
+/* 玩法模式 */
+.game-modes {
+  display: flex;
+  flex-direction: column;
+  gap: 24rpx;
+}
+
+.game-mode-item {
+  display: flex;
+  align-items: center;
+  padding: 32rpx;
+  border-radius: 20rpx;
+  box-shadow: 0 6rpx 20rpx rgba(0, 0, 0, 0.08);
+  transition: transform 0.2s;
+}
+
+.game-mode-item:active {
+  transform: scale(0.98);
+}
+
+.game-mode-icon {
+  font-size: 60rpx;
+  margin-right: 30rpx;
+}
+
+.game-mode-content {
+  flex: 1;
+}
+
+.game-mode-title {
+  font-size: 36rpx;
+  font-weight: bold;
+  margin-bottom: 12rpx;
+  color: #2c3e50;
+}
+
+.game-mode-desc {
+  font-size: 26rpx;
+  color: #7f8c8d;
+}
+
+.game-mode-arrow {
+  font-size: 50rpx;
+  color: #bdc3c7;
+  font-weight: bold;
+}
+
+/* 功能网格 */
+.function-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24rpx;
+  margin-top: 20rpx;
+}
+
+.function-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 30rpx 20rpx;
+  background: white;
+  border-radius: 20rpx;
+  box-shadow: 0 6rpx 20rpx rgba(0, 0, 0, 0.08);
+  transition: transform 0.2s;
+}
+
+.function-item:active {
+  transform: scale(0.95);
+}
+
+.function-icon {
+  font-size: 50rpx;
+  margin-bottom: 16rpx;
+}
+
+.function-title {
+  font-size: 26rpx;
+  color: #2c3e50;
+  font-weight: bold;
+}
+
+/* 底部提示 */
+.footer-tip {
+  text-align: center;
+  margin-top: 60rpx;
+  padding: 30rpx;
+  font-size: 24rpx;
+  color: #95a5a6;
+}
+
+/* 图标字体 */
+@font-face {
+  font-family: 'iconfont';
+  src: url('https://at.alicdn.com/t/font_1234567_abcdefghijkl.woff2') format('woff2'),
+       url('https://at.alicdn.com/t/font_1234567_abcdefghijkl.woff') format('woff');
+  font-weight: normal;
+  font-style: normal;
+}
+
+.iconfont {
+  font-family: "iconfont" !important;
+  font-size: inherit;
+  font-style: normal;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* 由于无法保证iconfont可用，使用备用方案 */
+.icon-gift::before { content: '🎁'; }
+.icon-diamond::before { content: '💎'; }
+.icon-clock::before { content: '⏰'; }
+.icon-trophy::before { content: '🏆'; }
+.icon-smile::before { content: '😊'; }
+.icon-users::before { content: '👥'; }
+.icon-bar-chart::before { content: '📊'; }
+.icon-flag::before { content: '🏁'; }
+.icon-shopping-bag::before { content: '🎒'; }
+.icon-shopping-cart::before { content: '🛒'; }
