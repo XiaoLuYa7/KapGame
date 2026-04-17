@@ -1,0 +1,103 @@
+<!--pages/game/game.wxml-->
+<view class="container">
+  <!-- 游戏状态 -->
+  <view class="card" wx:if="{{gameState}}">
+    <view style="display: flex; justify-content: space-between; align-items: center;">
+      <text style="font-size: 32rpx; font-weight: bold;">
+        游戏状态: {{gameState.status === 'PLAYING' ? '进行中' : '已结束'}}
+      </text>
+      <text style="color: {{gameState.isYourTurn ? '#27ae60' : '#e74c3c'}};">
+        {{gameState.isYourTurn ? '你的回合' : '等待中'}}
+      </text>
+    </view>
+
+    <view style="margin-top: 20rpx;">
+      <text style="color: #666;">
+        牌堆剩余: {{gameState.deckRemaining}}张 |
+        当前回合: 玩家{{gameState.currentTurn + 1}}
+      </text>
+    </view>
+  </view>
+
+  <!-- 玩家列表 -->
+  <view class="card" wx:if="{{gameState}}">
+    <text style="font-size: 32rpx; font-weight: bold; margin-bottom: 20rpx;">玩家状态</text>
+    <view wx:for="{{gameState.players}}" wx:key="playerIndex" class="player-info">
+      <view>
+        <text style="font-size: 28rpx;">
+          {{item.username}}
+          <text wx:if="{{item.playerIndex === gameState.yourPlayerIndex}}">(你)</text>
+          <text wx:if="{{item.isAi}}">(AI)</text>
+        </text>
+        <text style="display: block; color: #666; font-size: 24rpx;">
+          HP: {{item.hp}} | 手牌: {{item.handCount}}张
+        </text>
+      </view>
+      <view>
+        <text wx:if="{{!item.isAlive}}" style="color: #e74c3c;">❌ 淘汰</text>
+        <text wx:if="{{item.isAlive && item.playerIndex === gameState.currentTurn}}" style="color: #27ae60;">▶ 行动中</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 手牌区域 -->
+  <view class="card" wx:if="{{gameState && gameState.handCards.length > 0}}">
+    <text style="font-size: 32rpx; font-weight: bold; margin-bottom: 20rpx;">你的手牌</text>
+    <view style="display: flex; flex-wrap: wrap; justify-content: center;">
+      <view
+        wx:for="{{gameState.handCards}}"
+        wx:key="index"
+        class="hand-card"
+        style="{{selectedCard === item ? 'background-color: #2980b9;' : ''}}"
+        data-card="{{item}}"
+        bindtap="selectCard"
+      >
+        {{item}}
+      </view>
+    </view>
+    <view style="text-align: center; margin-top: 20rpx;">
+      <text wx:if="{{selectedCard !== null}}" style="color: #27ae60;">
+        已选择卡牌: {{selectedCard}}
+      </text>
+      <text wx:else style="color: #666;">
+        点击选择卡牌
+      </text>
+    </view>
+  </view>
+
+  <!-- 操作按钮 -->
+  <view class="card" wx:if="{{gameState}}">
+    <text style="font-size: 32rpx; font-weight: bold; margin-bottom: 20rpx;">操作</text>
+
+    <button
+      class="btn"
+      bindtap="playCard"
+      disabled="{{!gameState.isYourTurn || selectedCard === null}}"
+      style="{{!gameState.isYourTurn || selectedCard === null ? 'opacity: 0.5;' : ''}}"
+    >
+      出牌
+    </button>
+
+    <button
+      class="btn"
+      bindtap="drawCard"
+      disabled="{{!gameState.isYourTurn}}"
+      style="{{!gameState.isYourTurn ? 'opacity: 0.5;' : ''}}"
+    >
+      抽牌
+    </button>
+
+    <button
+      style="background-color: #e74c3c; margin-top: 40rpx;"
+      class="btn"
+      bindtap="backToLobby"
+    >
+      返回大厅
+    </button>
+  </view>
+
+  <!-- 加载中 -->
+  <view wx:if="{{!gameState}}" class="card" style="text-align: center;">
+    <text>加载游戏状态中...</text>
+  </view>
+</view>

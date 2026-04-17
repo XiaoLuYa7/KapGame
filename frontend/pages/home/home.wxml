@@ -1,0 +1,99 @@
+<!-- pages/home/home.wxml -->
+<view class="home-container">
+  <!-- 顶部用户信息 -->
+  <view class="user-section" bindtap="handleLogin">
+    <view class="user-avatar">
+      <image wx:if="{{userData.avatarUrl && userData.avatarUrl.startsWith('http')}}" src="{{userData.avatarUrl}}" mode="aspectFill"></image>
+      <text wx:else class="avatar-emoji">👤</text>
+      <view class="avatar-badge" wx:if="{{userData.level > 0}}">Lv.{{userData.level}}</view>
+    </view>
+    <view class="user-info">
+      <view class="username">{{userData.username || '点击登录'}}</view>
+      <view class="rank-info">
+        <text class="rank-label">段位：</text>
+        <text class="rank-value">{{userData.rank}}</text>
+      </view>
+      <view class="resources">
+        <view class="resource-item">
+          <text class="resource-icon">💎</text>
+          <text class="resource-value">{{userData.diamond}}</text>
+        </view>
+        <view class="resource-item">
+          <text class="resource-icon">💰</text>
+          <text class="resource-value">{{userData.gold}}</text>
+        </view>
+      </view>
+    </view>
+    <view class="login-prompt" wx:if="{{!isLoggedIn}}">
+      <text class="login-text">点击登录</text>
+      <text class="login-arrow">›</text>
+    </view>
+  </view>
+
+  <!-- 活动信息 -->
+  <view class="section-title">
+    <text class="title-text">热门活动</text>
+    <text class="title-more" wx:if="{{activities.length > 0}}">查看全部</text>
+  </view>
+  <scroll-view class="activities-scroll" scroll-x="true" wx:if="{{activities.length > 0}}">
+    <view class="activities-list">
+      <view wx:for="{{activities}}" wx:key="id" class="activity-item" data-id="{{item.id}}" bindtap="handleActivityTap">
+        <view class="activity-image-wrapper">
+          <image wx:if="{{item.imageUrl}}" class="activity-image" src="{{item.imageUrl}}" mode="aspectFill"></image>
+          <view wx:else class="activity-image-placeholder">
+            <text class="activity-default-icon">{{item.activityType === 'SIGNIN' ? '📅' : item.activityType === 'RECHARGE' ? '💰' : item.activityType === 'GIFT' ? '🎁' : '🎯'}}</text>
+          </view>
+          <!-- 倒计时标签 -->
+          <view wx:if="{{item.showCountdown}}" class="countdown-badge">
+            <text class="countdown-icon">⏰</text>
+            <text class="countdown-text">{{item.countdownText}}</text>
+          </view>
+        </view>
+        <view class="activity-info">
+          <view class="activity-title">{{item.title}}</view>
+          <view class="activity-type-tag">
+            <text class="type-text">{{item.activityType === 'SIGNIN' ? '签到' : item.activityType === 'RECHARGE' ? '充值' : item.activityType === 'GIFT' ? '礼包' : '双倍'}}</text>
+          </view>
+        </view>
+      </view>
+    </view>
+  </scroll-view>
+  <view wx:if="{{isLoggedIn && activities.length === 0}}" class="empty-activities">
+    <text class="empty-text">暂无进行中的活动</text>
+  </view>
+
+  <!-- 玩法模式 -->
+  <view class="section-title">
+    <text class="title-text">玩法模式</text>
+  </view>
+  <view class="game-modes">
+    <view wx:for="{{gameModes}}" wx:key="id" class="game-mode-item" data-route="{{item.route}}" bindtap="handleGameModeTap" style="background-color: {{item.bgColor}}; border-left: 6px solid {{item.color}};">
+      <view class="game-mode-icon" style="color: {{item.color}};">
+        <text class="iconfont icon-{{item.icon}}"></text>
+      </view>
+      <view class="game-mode-content">
+        <view class="game-mode-title">{{item.title}}</view>
+        <view class="game-mode-desc">{{item.desc}}</view>
+      </view>
+      <view class="game-mode-arrow">›</view>
+    </view>
+  </view>
+
+  <!-- 功能按钮 -->
+  <view class="section-title">
+    <text class="title-text">功能</text>
+  </view>
+  <view class="function-grid">
+    <view wx:for="{{functions}}" wx:key="id" class="function-item" data-route="{{item.route}}" bindtap="handleFunctionTap">
+      <view class="function-icon" style="color: {{item.color}};">
+        <text class="iconfont icon-{{item.icon}}"></text>
+      </view>
+      <view class="function-title">{{item.title}}</view>
+    </view>
+  </view>
+
+  <!-- 底部提示 -->
+  <view class="footer-tip">
+    <text>背锅大作战 - 策略卡牌游戏</text>
+  </view>
+</view>
