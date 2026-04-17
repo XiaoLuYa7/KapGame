@@ -1,7 +1,25 @@
 // 权限工具函数
 import storage from './storage'
+import { ref } from 'vue'
 
 const PERMISSION_KEY = 'admin_permissions'
+
+// 响应式权限数据
+const permissions = ref({
+  pages: [],
+  functions: {}
+})
+
+// 应用启动时从 localStorage 初始化权限
+export function initPermissions() {
+  const stored = storage.get(PERMISSION_KEY)
+  if (stored) {
+    permissions.value = {
+      pages: Array.isArray(stored?.pages) ? stored.pages : [],
+      functions: stored?.functions && typeof stored.functions === 'object' ? stored.functions : {}
+    }
+  }
+}
 
 // 页面代码到路由路径的映射
 const PAGE_ROUTE_MAP = {
@@ -34,34 +52,31 @@ const FUNCTION_PAGE_MAP = {
 // 保存权限数据
 export function setPermissions(data) {
   storage.set(PERMISSION_KEY, data)
+  permissions.value = {
+    pages: Array.isArray(data?.pages) ? data.pages : [],
+    functions: data?.functions && typeof data.functions === 'object' ? data.functions : {}
+  }
 }
 
 // 获取权限数据
 export function getPermissions() {
-  const perm = storage.get(PERMISSION_KEY)
-  if (!perm) return { pages: [], functions: {} }
-  // 确保返回正确的结构
-  return {
-    pages: Array.isArray(perm.pages) ? perm.pages : [],
-    functions: perm.functions && typeof perm.functions === 'object' ? perm.functions : {}
-  }
+  return permissions.value
 }
 
 // 清除权限数据
 export function clearPermissions() {
   storage.remove(PERMISSION_KEY)
+  permissions.value = { pages: [], functions: {} }
 }
 
 // 检查是否有页面权限
 export function hasPagePermission(pageCode) {
-  const perm = getPermissions()
-  return perm.pages && perm.pages.includes(pageCode)
+  return permissions.value.pages && permissions.value.pages.includes(pageCode)
 }
 
 // 检查是否有功能权限
 export function hasFunctionPermission(functionCode) {
-  const perm = getPermissions()
-  if (!perm.functions) return false
+  if (!permissions.value.functions) return false
 
   // functionCode 格式如 "USER:VIEW" 或 "MODULE:USER:VIEW"
   const parts = functionCode.split(':')
@@ -77,7 +92,13 @@ export function hasFunctionPermission(functionCode) {
     action = parts[2]
   }
 
-  const pageFunctions = perm.functions[pageCode]
+  // 同时支持两种格式：USER 和 MODULE:USER
+  let pageFunctions = permissions.value.functions[pageCode]
+  if (!pageFunctions) {
+    // 尝试不带 MODULE: 前缀的格式
+    const simpleCode = parts.length === 2 ? parts[0] : parts[1]
+    pageFunctions = permissions.value.functions[simpleCode]
+  }
   if (!pageFunctions) return false
 
   return pageFunctions.includes(action)
@@ -98,7 +119,6 @@ export function hasPermission(code) {
 
 // 获取用户可以访问的菜单
 export function getAccessibleMenus() {
-  const perm = getPermissions()
   const accessibleMenus = []
 
   const allMenus = [
@@ -142,14 +162,19 @@ export function getPageCodeFromRoute(routePath) {
   return null
 }
 
+// 导出响应式权限引用，供外部监听
+export { permissions }
+
 export default {
   setPermissions,
   getPermissions,
   clearPermissions,
+  initPermissions,
   hasPagePermission,
   hasFunctionPermission,
   hasPermission,
   getAccessibleMenus,
   hasButtonPermission,
-  getPageCodeFromRoute
+  getPageCodeFromRoute,
+  permissions
 }

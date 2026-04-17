@@ -7,11 +7,13 @@ public class ApiResponse<T> {
     private boolean success;
     private String message;
     private T data;
+    private boolean requiresReLogin; // 标记当前用户是否需要重新登录
 
     public ApiResponse(boolean success, String message, T data) {
         this.success = success;
         this.message = message;
         this.data = data;
+        this.requiresReLogin = false;
     }
 
     public static <T> ApiResponse<T> success(T data) {
@@ -32,5 +34,9 @@ public class ApiResponse<T> {
 
     public static ApiResponse<Void> successMessage(String message) {
         return new ApiResponse<>(true, message, null);
+    }
+
+    public void setRequiresReLogin(boolean requiresReLogin) {
+        this.requiresReLogin = requiresReLogin;
     }
 }

@@ -323,7 +323,6 @@ public class PermissionServiceImpl implements PermissionService {
         node.setCode(p.getCode());
         node.setName(p.getName());
         node.setParentId(p.getParentId());
-        node.setIsPage(p.getIsPage());
         node.setType(p.getType());
         node.setOrderNum(p.getOrderNum());
         node.setIcon(p.getIcon());

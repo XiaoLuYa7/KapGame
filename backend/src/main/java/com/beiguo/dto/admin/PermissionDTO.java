@@ -13,7 +13,6 @@ public class PermissionDTO {
     private Long parentId;
     private String parentCode;
     private String parentName;
-    private Boolean isPage;
     private String type;
     private Integer orderNum;
     private String icon;

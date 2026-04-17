@@ -3,7 +3,6 @@
     <div class="login-background">
       <div class="gradient-orb orb-1"></div>
       <div class="gradient-orb orb-2"></div>
-      <div class="gradient-orb orb-3"></div>
     </div>
 
     <div class="login-container">
@@ -153,7 +152,7 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #F8FAFC 0%, #EEF2FF 50%, #F8FAFC 100%);
   position: relative;
   overflow: hidden;
 }
@@ -167,71 +166,54 @@ onMounted(() => {
 .gradient-orb {
   position: absolute;
   border-radius: 50%;
-  filter: blur(80px);
-  opacity: 0.4;
+  filter: blur(100px);
+  opacity: 0.5;
 }
 
 .orb-1 {
-  width: 500px;
-  height: 500px;
-  background: #a855f7;
-  top: -200px;
+  width: 400px;
+  height: 400px;
+  background: #C4B5FD;
+  top: -100px;
   right: -100px;
-  animation: float 8s ease-in-out infinite;
+  animation: float 10s ease-in-out infinite;
 }
 
 .orb-2 {
-  width: 400px;
-  height: 400px;
-  background: #3b82f6;
-  bottom: -150px;
+  width: 350px;
+  height: 350px;
+  background: #A5B4FC;
+  bottom: -100px;
   left: -100px;
-  animation: float 10s ease-in-out infinite reverse;
-}
-
-.orb-3 {
-  width: 300px;
-  height: 300px;
-  background: #ec4899;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  animation: pulse 6s ease-in-out infinite;
+  animation: float 12s ease-in-out infinite reverse;
 }
 
 @keyframes float {
   0%, 100% { transform: translateY(0) rotate(0deg); }
-  50% { transform: translateY(-30px) rotate(5deg); }
-}
-
-@keyframes pulse {
-  0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.4; }
-  50% { transform: translate(-50%, -50%) scale(1.1); opacity: 0.3; }
+  50% { transform: translateY(-20px) rotate(3deg); }
 }
 
 .login-container {
   position: relative;
   z-index: 10;
   width: 100%;
-  max-width: 420px;
+  max-width: 400px;
   padding: 20px;
 }
 
 .login-card {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(20px);
+  background: white;
   border-radius: 20px;
   padding: 36px 32px;
-  box-shadow:
-    0 20px 40px -12px rgba(0, 0, 0, 0.25),
-    0 0 0 1px rgba(255, 255, 255, 0.1);
-  animation: slideUp 0.6s ease-out;
+  border: 1px solid var(--border-default);
+  box-shadow: var(--shadow-xl);
+  animation: slideUp 0.4s ease-out;
 }
 
 @keyframes slideUp {
   from {
     opacity: 0;
-    transform: translateY(30px);
+    transform: translateY(20px);
   }
   to {
     opacity: 1;
@@ -248,19 +230,19 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 16px;
+  gap: 14px;
 }
 
 .logo-icon {
   width: 40px;
   height: 40px;
-  background: linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%);
+  background: var(--gradient-primary);
   border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
   color: white;
-  box-shadow: 0 6px 16px -4px rgba(99, 102, 241, 0.4);
+  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
 }
 
 .logo-icon svg {
@@ -272,14 +254,14 @@ onMounted(() => {
   margin: 0;
   font-size: 20px;
   font-weight: 700;
-  color: #1E293B;
-  letter-spacing: -0.5px;
+  color: var(--text-primary);
+  letter-spacing: -0.4px;
 }
 
 .logo-text p {
   margin: 4px 0 0;
   font-size: 13px;
-  color: #64748B;
+  color: var(--text-secondary);
 }
 
 .login-form {
@@ -298,7 +280,7 @@ onMounted(() => {
   left: 14px;
   width: 18px;
   height: 18px;
-  color: #94A3B8;
+  color: var(--text-muted);
   z-index: 1;
   pointer-events: none;
 }
@@ -309,31 +291,31 @@ onMounted(() => {
 }
 
 .login-form :deep(.el-input__wrapper) {
-  padding: 6px 14px 6px 42px;
+  padding: 5px 14px 5px 42px;
   border-radius: 10px;
-  box-shadow: 0 0 0 1px #E2E8F0;
-  transition: all 0.3s ease;
-  background: #FAFBFC;
+  border: 1px solid var(--border-default);
+  transition: all 0.2s ease;
+  background: var(--bg-page);
 }
 
 .login-form :deep(.el-input__wrapper:hover) {
-  box-shadow: 0 0 0 1px #C7D2E0;
-  background: white;
+  border-color: var(--purple-300);
 }
 
 .login-form :deep(.el-input__wrapper.is-focus) {
-  box-shadow: 0 0 0 2px #6366F1, 0 4px 12px -4px rgba(99, 102, 241, 0.2);
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
   background: white;
 }
 
 .login-form :deep(.el-input__inner) {
-  height: 38px;
+  height: 36px;
   font-size: 14px;
-  color: #1E293B;
+  color: var(--text-primary);
 }
 
 .login-form :deep(.el-input__inner::placeholder) {
-  color: #94A3B8;
+  color: var(--text-muted);
 }
 
 .login-btn {
@@ -342,18 +324,18 @@ onMounted(() => {
   border-radius: 10px;
   font-size: 15px;
   font-weight: 600;
-  letter-spacing: 2px;
-  background: linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%);
+  letter-spacing: 1px;
+  background: var(--gradient-primary) !important;
   border: none;
   color: white;
   cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 6px 16px -4px rgba(99, 102, 241, 0.4);
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
 }
 
 .login-btn:hover {
   transform: translateY(-1px);
-  box-shadow: 0 8px 20px -4px rgba(99, 102, 241, 0.5);
+  box-shadow: 0 6px 18px rgba(99, 102, 241, 0.4);
 }
 
 .login-btn:active {
@@ -363,7 +345,6 @@ onMounted(() => {
 .login-btn:disabled {
   opacity: 0.7;
   cursor: not-allowed;
-  transform: none;
 }
 
 .login-footer {
@@ -374,11 +355,11 @@ onMounted(() => {
 .login-footer p {
   margin: 0;
   font-size: 13px;
-  color: #94A3B8;
+  color: var(--text-muted);
 }
 
 .login-footer span {
-  color: #6366F1;
+  color: var(--primary);
   font-weight: 500;
 }
 </style>

@@ -47,7 +47,26 @@
       "Skill(planning-with-files:planning-with-files)",
       "Bash(find D:/ClaudeCode/KapGame/admin-frontend/views -name *.vue)",
       "Bash(find D:/ClaudeCode/KapGame/admin-frontend/components -name *.vue)",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(sed -n '150,384p' \"D:\\\\ClaudeCode\\\\KapGame\\\\admin-frontend\\\\views\\\\Login.vue\")",
+      "Read(//tmp/**)",
+      "Bash(echo \"=== $f ===\")",
+      "Read(//d/ClaudeCode/KapGame/admin-frontend/**)",
+      "Bash(npm run:*)",
+      "Bash(npx vite:*)",
+      "Bash(find /d/ClaudeCode/KapGame/backend -name *.java)",
+      "Bash(TOKEN=\"eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhZG1pbiIsInVzZXJJZCI6MSwiaWF0IjoxNzc2NDEyMTc0LCJleHAiOjE3NzY0OTg1NzQsInJvbGUiOiJTVVBFUl9BRE1JTiJ9.A9_Lqk-jAKOqt_t14mEH5c0QIdVI6UiWiFrnCGBOJz4\")",
+      "Bash(TOKEN=\"eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhZG1pbiIsInVzZXJJZCI6MSwiaWF0IjoxNzc2NDEyMTc0LCJleHAiOjE3NzY0OTg1NzQsInJvbGUiOiJTVVBFUl9BRE1JTiJ9.A9_Lqk-jAKOqt_t14mEH5c0QIdVI6UiWiFrnCGBOJz4\" curl -s -m 10 \"http://localhost:8080/admin/roles/1/permissions/tree\" -H \"Authorization: Bearer $TOKEN\")",
+      "Bash(python3 -c \"import sys,json; data=json.load\\(sys.stdin\\); print\\(json.dumps\\(data, indent=2, ensure_ascii=False\\)\\)\")",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(''''pages:'''', d[''''data''''][''''pages'''']\\)\")",
+      "Bash(TOKEN=\"eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhZG1pbiIsInVzZXJJZCI6MSwiaWF0IjoxNzc2NDE0NjYyLCJleHAiOjE3NzY1MDEwNjIsInJvbGUiOiJTVVBFUl9BRE1JTiJ9.ARlUDYZerFeYsDZGqBpNFXdBu3AbLAT_cj-3bvcPbcc\")",
+      "Bash(python3 -c \":*)",
+      "Bash(TOKEN=\"eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhZG1pbiIsInVzZXJJZCI6MSwiaWF0IjoxNzc2NDE1MDg5LCJleHAiOjE3NzY1MDE0ODksInJvbGUiOiJTVVBFUl9BRE1JTiJ9.TaePzWCBvWMnajyggHY4B3FapyHS_1HiANZPhK-JkCM\" curl -s -m 10 \"http://localhost:8080/admin/roles/1/permissions/tree\" -H \"Authorization: Bearer $TOKEN\")",
+      "Bash(TOKEN=\"eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhZG1pbiIsInVzZXJJZCI6MSwiaWF0IjoxNzc2NDE4MTkzLCJleHAiOjE3NzY1MDQ1OTMsInJvbGUiOiJTVVBFUl9BRE1JTiJ9.cE2ytoANUFFSElAkAkPr4aXCKx57ERIF47vxFJifnis\")",
+      "Bash(node -e \"import\\(''./router/index.js'', { assert: { type: ''module'' } }\\).then\\(m => console.log\\(''Router imports OK''\\)\\).catch\\(e => console.error\\(''Router import error:'', e.message\\)\\)\")",
+      "Bash(grep -r /apis D:/ClaudeCode/KapGame/admin-frontend/ --include=*.js --include=*.vue --include=*.html)",
+      "Bash(grep:*)",
+      "Bash(find D:/ClaudeCode/KapGame/backend -name application*.yml -o -name application*.properties)"
     ]
   },
   "enabledPlugins": {

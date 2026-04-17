@@ -1,0 +1,1 @@
+import{a as t}from"./index-DEVO6bIT.js";const o=s=>t.get("/admin/system-configs",{params:s}),i=s=>t.get(`/admin/system-configs/${s}`),a=s=>t.post("/admin/system-configs",s),g=(s,n)=>t.put(`/admin/system-configs/${s}`,n),r=s=>t.delete(`/admin/system-configs/${s}`);export{i as a,a as c,r as d,o as g,g as u};

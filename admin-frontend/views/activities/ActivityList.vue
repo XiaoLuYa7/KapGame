@@ -5,7 +5,7 @@
         <h1>活动管理</h1>
         <p>管理系统中的所有活动</p>
       </div>
-      <el-button type="primary" @click="router.push('/activities/edit')">
+      <el-button v-if="canCreate" type="primary" @click="router.push('/activities/edit')">
         <el-icon><Plus /></el-icon>
         创建活动
       </el-button>
@@ -85,14 +85,14 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="160" fixed="right">
+        <el-table-column v-if="hasAnyAction" label="操作" width="160" fixed="right">
           <template #default="{ row }">
             <div class="action-buttons">
-              <el-button type="primary" text size="small" @click="router.push(`/activities/${row.id}/edit`)">
+              <el-button v-if="canEdit" type="primary" text size="small" @click="router.push(`/activities/${row.id}/edit`)">
                 <el-icon><Edit /></el-icon>
                 编辑
               </el-button>
-              <el-button type="danger" text size="small" @click="deleteActivity(row)">
+              <el-button v-if="canDelete" type="danger" text size="small" @click="deleteActivity(row)">
                 <el-icon><Delete /></el-icon>
               </el-button>
             </div>
@@ -116,16 +116,23 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Edit, Delete, Calendar, Picture } from '@element-plus/icons-vue'
 import { getActivities, deleteActivity as deleteActivityApi } from '@/apis/activities'
 import { formatDateTime } from '@/utils/format'
 import { useDict } from '@/composables/useDict'
+import { hasFunctionPermission } from '@/utils/permission'
 
 const router = useRouter()
 const { loadDict, getDict, getDictLabel, getDictCodeLabel } = useDict()
+
+// 权限检查 - 使用 computed 确保响应式
+const canCreate = computed(() => hasFunctionPermission('ACTIVITY:CREATE'))
+const canEdit = computed(() => hasFunctionPermission('ACTIVITY:EDIT'))
+const canDelete = computed(() => hasFunctionPermission('ACTIVITY:DELETE'))
+const hasAnyAction = computed(() => canEdit.value || canDelete.value)
 
 const activityTypeLabel = (type) => getDictCodeLabel('activity_type', type)
 
@@ -215,7 +222,7 @@ onMounted(() => {
 }
 
 .filter-label {
-  color: #606266;
+  color: var(--text-secondary);
   font-size: 14px;
   white-space: nowrap;
 }
@@ -235,7 +242,7 @@ onMounted(() => {
 }
 
 .time-text {
-  color: #64748B;
+  color: var(--text-secondary);
   font-size: 13px;
 }
 

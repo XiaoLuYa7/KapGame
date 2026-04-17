@@ -10,7 +10,6 @@ public class PermissionTreeNode {
     private String code;
     private String name;
     private Long parentId;
-    private Boolean isPage;
     private String type; // ROOT/MENU/PAGE/FUNCTION
     private Integer orderNum;
     private String icon;

@@ -17,6 +17,7 @@ public interface PermissionRepository extends JpaRepository<Permission, Long> {
 
     List<Permission> findByParentIdIsNull();
     List<Permission> findByParentId(Long parentId);
+    List<Permission> findByParentIdAndType(Long parentId, String type);
 
     List<Permission> findByParentIdOrderByOrderNumAsc(Long parentId);
     List<Permission> findByParentIdIsNullOrderByOrderNumAsc();

@@ -31,4 +31,14 @@ public interface AdminUserRepository extends JpaRepository<AdminUser, Long> {
     long countActiveUsers();
 
     long countByRole(Role role);
+
+    @org.springframework.data.jpa.repository.Modifying
+    @org.springframework.data.jpa.repository.Query("UPDATE AdminUser u SET u.onlineStatus = :status WHERE u.id = :id")
+    void updateOnlineStatus(@org.springframework.data.repository.query.Param("id") Long id, @org.springframework.data.repository.query.Param("status") String status);
+
+    @org.springframework.data.jpa.repository.Modifying
+    @org.springframework.data.jpa.repository.Query("UPDATE AdminUser u SET u.lastHeartbeatTime = :time WHERE u.id = :id")
+    void updateHeartbeatTime(@org.springframework.data.repository.query.Param("id") Long id, @org.springframework.data.repository.query.Param("time") java.time.LocalDateTime time);
+
+    List<AdminUser> findByOnlineStatus(String onlineStatus);
 }

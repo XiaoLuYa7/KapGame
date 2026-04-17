@@ -1,0 +1,1 @@
+import{a as t}from"./index-DEVO6bIT.js";const a=s=>t.post("/admin/publish",s),e=()=>t.get("/admin/publish/history"),n=()=>t.get("/admin/publish/latest"),r=()=>t.get("/admin/publish/stats");export{e as a,r as b,n as g,a as p};

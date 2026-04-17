@@ -28,10 +28,6 @@ public class Permission {
     @Column(name = "parent_id")
     private Long parentId;
 
-    @Column(name = "is_page")
-    private Boolean isPage = false; // 是否为页面权限（旧字段，保留兼容）
-
-    // 新增字段
     @Column(length = 20)
     private String type = "PAGE"; // ROOT/MENU/PAGE/FUNCTION
 

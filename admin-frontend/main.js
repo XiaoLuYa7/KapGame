@@ -7,6 +7,10 @@ import App from './App.vue'
 import router from './router'
 import './styles/global.css'
 import { permissionDirective, hasPermissionDirective, buttonPermissionDirective } from '@/directives/permission'
+import { initPermissions } from '@/utils/permission'
+
+// 初始化权限数据
+initPermissions()
 
 const app = createApp(App)
 

@@ -58,6 +58,8 @@ public class AdminAuthService implements UserDetailsService {
 
         // 更新登录时间和次数
         adminUser.setLastLoginTime(java.time.LocalDateTime.now());
+        adminUser.setOnlineStatus("ONLINE"); // 设置为在线
+        adminUser.setLastHeartbeatTime(java.time.LocalDateTime.now()); // 初始化心跳时间
         adminUser.setLoginCount(adminUser.getLoginCount() != null ? adminUser.getLoginCount() + 1 : 1);
         adminUserRepository.save(adminUser);
 
@@ -75,16 +77,38 @@ public class AdminAuthService implements UserDetailsService {
         if (role != null && role.getPermissions() != null) {
             Set<Permission> permissions = role.getPermissions();
 
-            // 第一遍：收集所有页面权限（根据type判断）
+            // 预先收集所有功能权限涉及的模块代码
+            Set<String> functionModules = new HashSet<>();
+            for (Permission p : permissions) {
+                String code = p.getCode();
+                if (code == null || !code.contains(":")) continue;
+                if (!"FUNCTION".equals(p.getType())) continue;
+                String[] parts = code.split(":");
+                if (parts.length != 2) continue;
+                functionModules.add(parts[0]);
+            }
+
+            // 第一遍：收集所有页面权限
+            // 1. 直接添加 PAGE 类型的权限
+            // 2. 如果某模块有功能权限但没有PAGE权限，也添加该模块的PAGE权限
             for (Permission p : permissions) {
                 String code = p.getCode();
                 if (code == null) continue;
 
-                // PAGE 类型的权限是页面权限
+                // PAGE 类型的权限直接添加
                 if ("PAGE".equals(p.getType())) {
                     if (!pages.contains(code)) {
                         pages.add(code);
                     }
+                }
+            }
+
+            // 补充：如果某模块有功能权限但没有对应的PAGE权限，也添加到pages
+            // 这确保了用户即使只有功能权限也能访问对应页面
+            for (String moduleCode : functionModules) {
+                String pageCode = "MODULE:" + moduleCode;
+                if (!pages.contains(pageCode)) {
+                    pages.add(pageCode);
                 }
             }
 
@@ -99,16 +123,17 @@ public class AdminAuthService implements UserDetailsService {
                 String[] parts = code.split(":");
                 if (parts.length != 2) continue;
 
-                String pageCode = "MODULE:" + parts[0]; // USER:VIEW -> MODULE:USER
+                String moduleCode = parts[0]; // USER:CREATE -> USER
+                String pageCode = "MODULE:" + moduleCode; // MODULE:USER
 
-                // 确保页面权限存在
+                // 确保页面权限存在（如果角色有该模块的功能权限，则应该能访问该页面）
                 if (!pages.contains(pageCode)) {
-                    // 如果没有对应的页面权限，跳过
-                    continue;
+                    // 如果没有PAGE权限但有功能权限，也应该添加PAGE
+                    pages.add(pageCode);
                 }
 
                 String action = parts[1];
-                functions.computeIfAbsent(pageCode, k -> new ArrayList<>()).add(action);
+                functions.computeIfAbsent(moduleCode, k -> new ArrayList<>()).add(action);
             }
         }
 

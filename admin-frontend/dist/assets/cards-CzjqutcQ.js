@@ -1,0 +1,1 @@
+import{a as r}from"./index-DEVO6bIT.js";const d=a=>r.get("/admin/cards",{params:a}),e=a=>r.get(`/admin/cards/${a}`),n=a=>r.post("/admin/cards",a),c=(a,t)=>r.put(`/admin/cards/${a}`,t),o=a=>r.delete(`/admin/cards/${a}`),u=a=>r.post(`/admin/cards/${a}/publish`);export{e as a,n as c,o as d,d as g,u as p,c as u};

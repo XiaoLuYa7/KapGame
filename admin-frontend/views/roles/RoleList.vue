@@ -5,7 +5,7 @@
         <h1>角色管理</h1>
         <p>管理系统中的所有角色</p>
       </div>
-      <el-button type="primary" @click="router.push('/roles/add')">创建角色</el-button>
+      <el-button v-if="canCreate" type="primary" @click="router.push('/roles/add')">创建角色</el-button>
     </div>
 
     <el-card class="table-card">
@@ -42,10 +42,10 @@
             {{ formatDateTime(row.createTime) }}
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="200">
+        <el-table-column v-if="hasAnyAction" label="操作" width="200">
           <template #default="{ row }">
-            <el-button size="small" @click="router.push(`/roles/${row.id}/edit`)">编辑</el-button>
-            <el-button size="small" type="danger" @click="deleteRole(row)">删除</el-button>
+            <el-button v-if="canEdit" size="small" @click="router.push(`/roles/${row.id}/edit`)">编辑</el-button>
+            <el-button v-if="canDelete" size="small" type="danger" @click="deleteRole(row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -65,12 +65,19 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getRoles, deleteRole as deleteRoleApi } from '@/apis/roles'
+import { hasFunctionPermission } from '@/utils/permission'
 
 const router = useRouter()
+
+// 权限检查 - 使用 computed 确保响应式
+const canCreate = computed(() => hasFunctionPermission('ROLE:CREATE'))
+const canEdit = computed(() => hasFunctionPermission('ROLE:EDIT'))
+const canDelete = computed(() => hasFunctionPermission('ROLE:DELETE'))
+const hasAnyAction = computed(() => canEdit.value || canDelete.value)
 
 const roles = ref([])
 const loading = ref(false)
@@ -153,13 +160,13 @@ onMounted(() => {
   margin: 0 0 8px;
   font-size: 24px;
   font-weight: 700;
-  color: #1E293B;
+  color: var(--text-primary);
 }
 
 .page-header-content p {
   margin: 0;
   font-size: 14px;
-  color: #64748B;
+  color: var(--text-secondary);
 }
 
 .table-card {
@@ -180,8 +187,8 @@ onMounted(() => {
 }
 
 .filter-label {
+  color: var(--text-secondary);
   font-size: 14px;
-  color: #606266;
   white-space: nowrap;
 }
 

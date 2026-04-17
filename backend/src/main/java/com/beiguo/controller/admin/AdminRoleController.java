@@ -3,6 +3,7 @@ package com.beiguo.controller.admin;
 import com.beiguo.dto.ApiResponse;
 import com.beiguo.dto.admin.PermissionTreeNode;
 import com.beiguo.dto.admin.RoleDTO;
+import com.beiguo.entity.AdminUser;
 import com.beiguo.entity.Role;
 import com.beiguo.entity.Permission;
 import com.beiguo.repository.RoleRepository;
@@ -18,6 +19,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
@@ -111,6 +114,9 @@ public class AdminRoleController {
             return ApiResponse.error("角色名称已存在");
         }
 
+        // 检查是否影响当前用户 - 如果修改的是当前用户所属角色的权限，需要提示重新登录
+        boolean affectsCurrentUser = isCurrentUsersRole(id);
+
         role.setName(request.getName());
         role.setDescription(request.getDescription());
         role.setStatus(request.getStatus());
@@ -126,7 +132,12 @@ public class AdminRoleController {
         }
 
         role = roleRepository.save(role);
-        return ApiResponse.success("角色更新成功", convertToDTO(role));
+
+        ApiResponse<RoleDTO> response = ApiResponse.success("角色更新成功", convertToDTO(role));
+        if (affectsCurrentUser) {
+            response.setRequiresReLogin(true);
+        }
+        return response;
     }
 
     @DeleteMapping("/{id}")
@@ -182,9 +193,24 @@ public class AdminRoleController {
     }
 
     private String getCurrentAdminUsername() {
-        // 这里可以从SecurityContext获取当前登录的管理员用户名
-        // 暂时返回"SYSTEM"，实际项目中需要实现
-        return "SYSTEM";
+        AdminUser currentAdmin = getCurrentAdmin();
+        return currentAdmin != null ? currentAdmin.getUsername() : "SYSTEM";
+    }
+
+    private AdminUser getCurrentAdmin() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.getPrincipal() instanceof AdminUser) {
+            return (AdminUser) authentication.getPrincipal();
+        }
+        return null;
+    }
+
+    private boolean isCurrentUsersRole(Long roleId) {
+        AdminUser currentAdmin = getCurrentAdmin();
+        if (currentAdmin == null || currentAdmin.getRole() == null) {
+            return false;
+        }
+        return currentAdmin.getRole().getId().equals(roleId);
     }
 
     @Data

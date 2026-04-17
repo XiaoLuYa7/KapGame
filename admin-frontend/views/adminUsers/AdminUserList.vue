@@ -5,7 +5,7 @@
         <h1>管理员管理</h1>
         <p>管理系统中的所有管理员用户</p>
       </div>
-      <el-button type="primary" @click="router.push('/admin-users/add')">创建管理员</el-button>
+      <el-button v-if="canCreate" type="primary" @click="router.push('/admin-users/add')">创建管理员</el-button>
     </div>
 
     <el-card class="table-card">
@@ -43,15 +43,27 @@
             </el-tag>
           </template>
         </el-table-column>
+        <el-table-column label="在线状态" width="100">
+          <template #default="{ row }">
+            <span :class="row.onlineStatus === 'ONLINE' ? 'online-indicator online' : 'online-indicator offline'">
+              {{ row.onlineStatus === 'ONLINE' ? '在线' : '离线' }}
+            </span>
+          </template>
+        </el-table-column>
+        <el-table-column label="最后心跳" width="140">
+          <template #default="{ row }">
+            {{ formatRelativeTime(row.lastHeartbeatTime) }}
+          </template>
+        </el-table-column>
         <el-table-column prop="createTime" label="创建时间">
           <template #default="{ row }">
             {{ formatDateTime(row.createTime) }}
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="200">
+        <el-table-column v-if="hasAnyAction" label="操作" width="200">
           <template #default="{ row }">
-            <el-button size="small" @click="router.push(`/admin-users/${row.id}/edit`)">编辑</el-button>
-            <el-button size="small" type="danger" @click="deleteAdminUser(row)">删除</el-button>
+            <el-button v-if="canEdit" size="small" @click="router.push(`/admin-users/${row.id}/edit`)">编辑</el-button>
+            <el-button v-if="canDelete" size="small" type="danger" @click="deleteAdminUser(row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -70,12 +82,19 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getAdminUsers, deleteAdminUser as deleteAdminUserApi } from '@/apis/adminUsers'
+import { hasFunctionPermission } from '@/utils/permission'
 
 const router = useRouter()
+
+// 权限检查 - 使用 computed 确保响应式
+const canCreate = computed(() => hasFunctionPermission('ADMIN_USER:CREATE'))
+const canEdit = computed(() => hasFunctionPermission('ADMIN_USER:EDIT'))
+const canDelete = computed(() => hasFunctionPermission('ADMIN_USER:DELETE'))
+const hasAnyAction = computed(() => canEdit.value || canDelete.value)
 
 const adminUsers = ref([])
 const loading = ref(false)
@@ -92,6 +111,24 @@ const formatDateTime = (date) => {
   if (!date) return '-'
   return new Date(date).toLocaleString()
 }
+
+const formatRelativeTime = (date) => {
+  if (!date) return '-'
+  const now = new Date()
+  const time = new Date(date)
+  const diff = now - time
+  const seconds = Math.floor(diff / 1000)
+  const minutes = Math.floor(seconds / 60)
+  const hours = Math.floor(minutes / 60)
+
+  if (seconds < 60) return '刚刚'
+  if (minutes < 60) return `${minutes}分钟前`
+  if (hours < 24) return `${hours}小时前`
+  return formatDateTime(date)
+}
+
+// 定时刷新定时器
+let refreshTimer = null
 
 const loadAdminUsers = async () => {
   loading.value = true
@@ -139,6 +176,16 @@ const deleteAdminUser = (row) => {
 
 onMounted(() => {
   loadAdminUsers()
+  // 每30秒刷新一次列表
+  refreshTimer = setInterval(() => {
+    loadAdminUsers()
+  }, 30000)
+})
+
+onUnmounted(() => {
+  if (refreshTimer) {
+    clearInterval(refreshTimer)
+  }
 })
 </script>
 
@@ -158,13 +205,13 @@ onMounted(() => {
   margin: 0 0 8px;
   font-size: 24px;
   font-weight: 700;
-  color: #1E293B;
+  color: var(--text-primary);
 }
 
 .page-header-content p {
   margin: 0;
   font-size: 14px;
-  color: #64748B;
+  color: var(--text-secondary);
 }
 
 .table-card {
@@ -186,7 +233,7 @@ onMounted(() => {
 
 .filter-label {
   font-size: 14px;
-  color: #606266;
+  color: var(--text-secondary);
   white-space: nowrap;
 }
 
@@ -194,5 +241,29 @@ onMounted(() => {
   margin-left: auto;
   display: flex;
   gap: 8px;
+}
+
+.online-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+}
+
+.online-indicator::before {
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.online-indicator.online::before {
+  background-color: #67c23a;
+  box-shadow: 0 0 4px #67c23a;
+}
+
+.online-indicator.offline::before {
+  background-color: #909399;
 }
 </style>

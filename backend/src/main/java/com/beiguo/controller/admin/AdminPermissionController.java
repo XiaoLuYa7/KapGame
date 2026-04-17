@@ -37,19 +37,46 @@ public class AdminPermissionController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "50") int size,
             @RequestParam(required = false) String code,
-            @RequestParam(required = false) String name) {
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) String type,
+            @RequestParam(required = false) Long parentId) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("id"));
         Page<Permission> permissions;
-        if ((code != null && !code.trim().isEmpty()) || (name != null && !name.trim().isEmpty())) {
-            List<Permission> filtered = permissionRepository.searchByCodeOrName(
-                    code != null ? code.trim() : null,
-                    name != null ? name.trim() : null);
-            permissions = new org.springframework.data.domain.PageImpl<>(filtered, pageable, filtered.size());
-        } else {
-            permissions = permissionRepository.findAll(pageable);
+
+        List<Permission> filtered = permissionRepository.findAll();
+        // 按类型过滤
+        if (type != null && !type.trim().isEmpty()) {
+            filtered = filtered.stream().filter(p -> type.equals(p.getType())).collect(Collectors.toList());
         }
+        // 按父权限过滤
+        if (parentId != null) {
+            final Long pid = parentId;
+            filtered = filtered.stream().filter(p -> pid.equals(p.getParentId())).collect(Collectors.toList());
+        }
+        // 按代码或名称过滤
+        if ((code != null && !code.trim().isEmpty()) || (name != null && !name.trim().isEmpty())) {
+            final String codeKeyword = code != null ? code.trim() : null;
+            final String nameKeyword = name != null ? name.trim() : null;
+            filtered = filtered.stream()
+                    .filter(p -> (codeKeyword == null || p.getCode().contains(codeKeyword))
+                            && (nameKeyword == null || p.getName().contains(nameKeyword)))
+                    .collect(Collectors.toList());
+        }
+
+        int start = (int) pageable.getOffset();
+        int end = Math.min(start + size, filtered.size());
+        List<Permission> pageContent = start < filtered.size() ? filtered.subList(start, end) : List.of();
+        permissions = new org.springframework.data.domain.PageImpl<>(pageContent, pageable, filtered.size());
+
         Page<PermissionDTO> permissionDTOs = permissions.map(this::convertToDTO);
         return ApiResponse.success(permissionDTOs);
+    }
+
+    @GetMapping("/all")
+    public ApiResponse<List<PermissionDTO>> getAllPermissions() {
+        List<Permission> all = permissionRepository.findAll();
+        List<PermissionDTO> dtos = all.stream().map(this::convertToDTO).collect(Collectors.toList());
+        return ApiResponse.success(dtos);
     }
 
     @GetMapping("/{id}")
@@ -76,7 +103,6 @@ public class AdminPermissionController {
         permission.setName(request.getName());
         permission.setDescription(request.getDescription());
         permission.setParentId(request.getParentId());
-        permission.setIsPage(request.getIsPage());
         permission.setType(request.getType() != null ? request.getType() : "FUNCTION");
         permission.setOrderNum(request.getOrderNum() != null ? request.getOrderNum() : 0);
         permission.setIcon(request.getIcon());
@@ -104,7 +130,6 @@ public class AdminPermissionController {
         permission.setName(request.getName());
         permission.setDescription(request.getDescription());
         permission.setParentId(request.getParentId());
-        permission.setIsPage(request.getIsPage());
         if (request.getType() != null) permission.setType(request.getType());
         if (request.getOrderNum() != null) permission.setOrderNum(request.getOrderNum());
         if (request.getIcon() != null) permission.setIcon(request.getIcon());
@@ -138,7 +163,6 @@ public class AdminPermissionController {
         dto.setName(permission.getName());
         dto.setDescription(permission.getDescription());
         dto.setParentId(permission.getParentId());
-        dto.setIsPage(permission.getIsPage());
         dto.setType(permission.getType());
         dto.setOrderNum(permission.getOrderNum());
         dto.setIcon(permission.getIcon());
@@ -171,7 +195,6 @@ public class AdminPermissionController {
         private String name;
         private String description;
         private Long parentId;
-        private Boolean isPage;
         private String type;
         private Integer orderNum;
         private String icon;
@@ -187,7 +210,6 @@ public class AdminPermissionController {
         private String name;
         private String description;
         private Long parentId;
-        private Boolean isPage;
         private String type;
         private Integer orderNum;
         private String icon;

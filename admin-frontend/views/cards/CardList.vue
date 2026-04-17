@@ -5,7 +5,7 @@
         <h1>卡牌管理</h1>
         <p>管理系统中的所有卡牌</p>
       </div>
-      <el-button type="primary" @click="router.push('/cards/edit')">
+      <el-button v-if="canCreate" type="primary" @click="router.push('/cards/edit')">
         <el-icon><Plus /></el-icon>
         创建卡牌
       </el-button>
@@ -61,10 +61,10 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="200" fixed="right">
+        <el-table-column v-if="hasAnyAction" label="操作" width="200" fixed="right">
           <template #default="{ row }">
             <div class="action-buttons">
-              <el-button type="primary" text size="small" @click="router.push(`/cards/${row.id}/edit`)">
+              <el-button v-if="canEdit" type="primary" text size="small" @click="router.push(`/cards/${row.id}/edit`)">
                 <el-icon><Edit /></el-icon>
                 编辑
               </el-button>
@@ -72,7 +72,7 @@
                 <el-icon><Promotion /></el-icon>
                 发布
               </el-button>
-              <el-button type="danger" text size="small" @click="deleteCard(row)">
+              <el-button v-if="canDelete" type="danger" text size="small" @click="deleteCard(row)">
                 <el-icon><Delete /></el-icon>
               </el-button>
             </div>
@@ -96,13 +96,20 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Edit, Delete, Promotion, MagicStick, Aim, Star } from '@element-plus/icons-vue'
 import { getCards, publishCard as publishCardApi, deleteCard as deleteCardApi } from '@/apis/cards'
+import { hasFunctionPermission } from '@/utils/permission'
 
 const router = useRouter()
+
+// 权限检查 - 使用 computed 确保响应式
+const canCreate = computed(() => hasFunctionPermission('CARD:CREATE'))
+const canEdit = computed(() => hasFunctionPermission('CARD:EDIT'))
+const canDelete = computed(() => hasFunctionPermission('CARD:DELETE'))
+const hasAnyAction = computed(() => canEdit.value || canDelete.value)
 
 const cards = ref([])
 const loading = ref(false)
@@ -187,29 +194,54 @@ onMounted(() => {
 }
 
 .stat-cell.mana {
-  color: #6366F1;
+  color: var(--color-primary);
 }
 
 .stat-cell.attack {
-  color: #EF4444;
+  color: var(--color-danger);
 }
 
 .stat-cell.health {
-  color: #10B981;
+  color: var(--color-success);
 }
 
-.action-buttons {
+/* 通用样式 */
+.page-header {
   display: flex;
-  gap: 0;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
 }
 
-.action-buttons .el-button {
-  padding: 2px 4px;
-  font-size: 12px;
+.page-title h1 {
+  margin: 0 0 4px;
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.3px;
 }
 
-.action-buttons .el-button .el-icon {
-  margin-right: 2px;
+.page-title p {
+  margin: 0;
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.search-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.search-bar .el-input {
+  width: 260px;
+}
+
+.header-actions {
+  display: flex;
+  gap: 8px;
 }
 
 .pagination-wrapper {
