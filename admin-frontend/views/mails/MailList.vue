@@ -5,7 +5,7 @@
         <h1>邮件管理</h1>
         <p>管理游戏邮件，支持发送文字+物品邮件给指定用户</p>
       </div>
-      <el-button type="primary" @click="router.push('/mails/add')">
+      <el-button v-if="canCreate" type="primary" @click="router.push('/mails/add')">
         <el-icon><Plus /></el-icon>
         创建邮件
       </el-button>
@@ -58,15 +58,15 @@
             {{ formatDate(row.createTime) }}
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="200" fixed="right">
+        <el-table-column v-if="hasAnyAction" label="操作" width="200" fixed="right">
           <template #default="{ row }">
             <div class="action-buttons">
-              <el-button type="primary" text size="small" @click="router.push(`/mails/${row.id}/edit`)">
+              <el-button v-if="canEdit" type="primary" text size="small" @click="router.push(`/mails/${row.id}/edit`)">
                 <el-icon><Edit /></el-icon>
                 编辑
               </el-button>
               <el-button
-                v-if="row.status === 'DRAFT'"
+                v-if="canEdit && row.status === 'DRAFT'"
                 type="success"
                 text
                 size="small"
@@ -76,7 +76,7 @@
                 发送
               </el-button>
               <el-button
-                v-if="row.status === 'DRAFT'"
+                v-if="canDelete && row.status === 'DRAFT'"
                 type="danger"
                 text
                 size="small"
@@ -105,13 +105,20 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Edit, Delete, Promotion } from '@element-plus/icons-vue'
 import { getMails, deleteMail, sendMail } from '@/apis/mail'
+import { hasFunctionPermission } from '@/utils/permission'
 
 const router = useRouter()
+
+// 权限检查 - 使用 computed 确保响应式
+const canCreate = computed(() => hasFunctionPermission('MAIL:CREATE'))
+const canEdit = computed(() => hasFunctionPermission('MAIL:EDIT'))
+const canDelete = computed(() => hasFunctionPermission('MAIL:DELETE'))
+const hasAnyAction = computed(() => canEdit.value || canDelete.value)
 
 const mails = ref([])
 const loading = ref(false)
@@ -234,5 +241,44 @@ onMounted(() => {
   margin-top: 24px;
   display: flex;
   justify-content: flex-end;
+}
+
+/* 通用样式 */
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.page-title h1 {
+  margin: 0 0 4px;
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.3px;
+}
+
+.page-title p {
+  margin: 0;
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.search-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.search-bar .el-input {
+  width: 260px;
+}
+
+.header-actions {
+  display: flex;
+  gap: 8px;
 }
 </style>

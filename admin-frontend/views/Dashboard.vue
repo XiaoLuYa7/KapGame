@@ -349,21 +349,21 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 32px;
+  margin-bottom: 24px;
 }
 
 .page-title h1 {
   margin: 0 0 8px;
   font-size: 28px;
   font-weight: 700;
-  color: #1E293B;
+  color: var(--text-primary);
   letter-spacing: -0.5px;
 }
 
 .page-title p {
   margin: 0;
   font-size: 15px;
-  color: #64748B;
+  color: var(--text-secondary);
 }
 
 /* 统计卡片 */
@@ -375,18 +375,18 @@ onMounted(() => {
 }
 
 .stat-card {
-  background: white;
+  background: var(--bg-card);
   border-radius: 16px;
   padding: 24px;
   position: relative;
   overflow: hidden;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  transition: all 0.3s ease;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.2s ease;
 }
 
 .stat-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 12px 24px -8px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-md);
 }
 
 .stat-accent {
@@ -432,14 +432,14 @@ onMounted(() => {
 .stat-value {
   font-size: 32px;
   font-weight: 700;
-  color: #1E293B;
+  color: var(--text-primary);
   line-height: 1;
   letter-spacing: -1px;
 }
 
 .stat-label {
   font-size: 14px;
-  color: #64748B;
+  color: var(--text-secondary);
   margin-top: 6px;
 }
 
@@ -453,17 +453,17 @@ onMounted(() => {
 
 /* 卡片通用 */
 .card {
-  background: white;
+  background: var(--bg-card);
   border-radius: 16px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--shadow-sm);
   overflow: hidden;
-  transition: box-shadow 0.3s ease;
+  transition: box-shadow 0.2s ease;
   display: flex;
   flex-direction: column;
 }
 
 .card:hover {
-  box-shadow: 0 8px 24px -8px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--shadow-md);
 }
 
 .card-header {
@@ -471,7 +471,7 @@ onMounted(() => {
   align-items: center;
   justify-content: space-between;
   padding: 16px 20px;
-  border-bottom: 1px solid #F1F5F9;
+  border-bottom: 1px solid var(--border-light);
   flex-shrink: 0;
 }
 
@@ -479,14 +479,14 @@ onMounted(() => {
   margin: 0;
   font-size: 15px;
   font-weight: 600;
-  color: #1E293B;
+  color: var(--text-primary);
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
 .card-header h3 .el-icon {
-  color: #6366F1;
+  color: var(--primary);
 }
 
 .card-body {
@@ -511,7 +511,7 @@ onMounted(() => {
 }
 
 .version-badge {
-  background: linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%);
+  background: var(--gradient-primary);
   color: white;
   padding: 5px 12px;
   border-radius: 16px;
@@ -521,7 +521,7 @@ onMounted(() => {
 
 .publish-time {
   font-size: 12px;
-  color: #94A3B8;
+  color: var(--text-muted);
 }
 
 .publish-stats {
@@ -535,11 +535,11 @@ onMounted(() => {
   align-items: center;
   gap: 6px;
   font-size: 13px;
-  color: #64748B;
+  color: var(--text-secondary);
 }
 
 .publish-stat .el-icon {
-  color: #94A3B8;
+  color: var(--text-muted);
 }
 
 .publisher {
@@ -547,14 +547,14 @@ onMounted(() => {
   align-items: center;
   gap: 6px;
   font-size: 13px;
-  color: #94A3B8;
+  color: var(--text-muted);
   margin-top: auto;
 }
 
 /* 昨日收益 */
 .earnings-date {
   font-size: 12px;
-  color: #94A3B8;
+  color: var(--text-muted);
 }
 
 .earnings-content {
@@ -565,7 +565,7 @@ onMounted(() => {
 }
 
 .earnings-total-card {
-  background: linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%);
+  background: var(--gradient-primary);
   border-radius: 10px;
   padding: 14px 16px;
   display: flex;
@@ -596,14 +596,14 @@ onMounted(() => {
   align-items: center;
   gap: 10px;
   padding: 10px 12px;
-  background: #F8FAFC;
+  background: var(--bg-page);
   border-radius: 8px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.15s ease;
 }
 
 .earnings-type-item:hover {
-  background: #F1F5F9;
+  background: var(--purple-50);
   transform: translateX(4px);
 }
 
@@ -622,7 +622,7 @@ onMounted(() => {
 .earnings-type-icon.skin { background: linear-gradient(135deg, #EC4899 0%, #F472B6 100%); }
 .earnings-type-icon.ad { background: linear-gradient(135deg, #F59E0B 0%, #FBBF24 100%); }
 .earnings-type-icon.sponsor { background: linear-gradient(135deg, #10B981 0%, #34D399 100%); }
-.earnings-type-icon.traffic { background: linear-gradient(135deg, #6366F1 0%, #818CF8 100%); }
+.earnings-type-icon.traffic { background: var(--gradient-primary); }
 
 .earnings-type-info {
   flex: 1;
@@ -633,18 +633,18 @@ onMounted(() => {
 .earnings-type-name {
   font-size: 13px;
   font-weight: 500;
-  color: #1E293B;
+  color: var(--text-primary);
 }
 
 .earnings-type-count {
   font-size: 11px;
-  color: #94A3B8;
+  color: var(--text-muted);
 }
 
 .earnings-type-amount {
   font-size: 13px;
   font-weight: 600;
-  color: #10B981;
+  color: var(--success);
 }
 
 /* 快捷操作 */
@@ -659,14 +659,14 @@ onMounted(() => {
   align-items: center;
   gap: 10px;
   padding: 10px 12px;
-  background: #F8FAFC;
+  background: var(--bg-page);
   border-radius: 8px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.15s ease;
 }
 
 .action-item:hover {
-  background: #F1F5F9;
+  background: var(--purple-50);
   transform: translateX(4px);
 }
 
@@ -681,7 +681,7 @@ onMounted(() => {
   font-size: 14px;
 }
 
-.action-icon.create { background: linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%); }
+.action-icon.create { background: var(--gradient-primary); }
 .action-icon.activity { background: linear-gradient(135deg, #F59E0B 0%, #FBBF24 100%); }
 .action-icon.config { background: linear-gradient(135deg, #10B981 0%, #34D399 100%); }
 .action-icon.earnings { background: linear-gradient(135deg, #EC4899 0%, #F472B6 100%); }
@@ -690,7 +690,7 @@ onMounted(() => {
 .action-item span {
   font-size: 13px;
   font-weight: 500;
-  color: #475569;
+  color: var(--text-secondary);
 }
 
 /* 系统状态 */
@@ -714,7 +714,7 @@ onMounted(() => {
   align-items: center;
   gap: 12px;
   padding: 12px 16px;
-  background: #F8FAFC;
+  background: var(--bg-page);
   border-radius: 10px;
 }
 
@@ -725,14 +725,13 @@ onMounted(() => {
 }
 
 .status-dot.online {
-  background: #10B981;
-  box-shadow: 0 0 8px rgba(16, 185, 129, 0.5);
+  background: var(--success);
 }
 
 .status-label {
   flex: 1;
   font-size: 14px;
-  color: #475569;
+  color: var(--text-secondary);
 }
 
 /* 响应式 */

@@ -216,9 +216,13 @@ const submitForm = async () => {
 
   try {
     // Build tree data with current checked state from el-tree
-    const checkedNodes = permissionTreeRef.value?.getCheckedNodes() || []
+    // 需要同时获取完全选中的节点和半选中的节点，否则取消勾选子节点时父节点会被遗漏
+    const tree = permissionTreeRef.value
+    const fullyChecked = tree?.getCheckedNodes(false, false) || []
+    const halfChecked = tree?.getHalfCheckedNodes() || []
+    const allChecked = [...fullyChecked, ...halfChecked]
     const treeData = JSON.parse(JSON.stringify(permissionTreeData.value))
-    markTreeChecked(treeData, checkedNodes)
+    markTreeChecked(treeData, allChecked)
 
     const submitData = {
       name: form.name,
@@ -230,13 +234,19 @@ const submitForm = async () => {
       delete submitData.password
     }
     if (isEdit.value) {
-      await updateRole(route.params.id, submitData)
-      ElMessage.success('更新成功')
+      const res = await updateRole(route.params.id, submitData)
+      if (res.requiresReLogin) {
+        ElMessage.warning('您修改了自身的权限配置，需要重新登录后才能生效')
+        router.back()
+      } else {
+        ElMessage.success('更新成功')
+        router.back()
+      }
     } else {
       await createRole(submitData)
       ElMessage.success('创建成功')
+      router.back()
     }
-    router.back()
   } catch (error) {
     ElMessage.error(isEdit.value ? '更新失败' : '创建失败')
     console.error(error)
@@ -247,9 +257,21 @@ const markTreeChecked = (nodes, checkedNodes) => {
   for (const node of nodes) {
     node.checked = checkedNodes.some(c => c.id === node.id)
     if (node.children && node.children.length > 0) {
+      // 如果当前节点未被勾选但有子节点被勾选，也标记为半选状态
+      if (!node.checked) {
+        node.checked = node.children.some(child => isNodeOrDescendantChecked(child, checkedNodes))
+      }
       markTreeChecked(node.children, checkedNodes)
     }
   }
+}
+
+const isNodeOrDescendantChecked = (node, checkedNodes) => {
+  if (checkedNodes.some(c => c.id === node.id)) return true
+  if (node.children && node.children.length > 0) {
+    return node.children.some(child => isNodeOrDescendantChecked(child, checkedNodes))
+  }
+  return false
 }
 
 onMounted(async () => {
@@ -257,3 +279,43 @@ onMounted(async () => {
   loadFormData()
 })
 </script>
+
+<style scoped>
+/* 页面标题区 */
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.page-title h1 {
+  margin: 0 0 4px;
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.3px;
+}
+
+.page-title p {
+  margin: 0;
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+/* 编辑页面通用样式 */
+.form-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border-default);
+}
+</style>

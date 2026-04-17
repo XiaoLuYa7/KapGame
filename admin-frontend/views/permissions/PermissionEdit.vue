@@ -7,7 +7,7 @@
 
       <el-form :model="form" :rules="rules" ref="formRef" label-width="100px">
         <el-form-item label="权限代码" prop="code">
-          <el-input v-model="form.code" placeholder="如：USER:VIEW" :disabled="isEdit" />
+          <el-input v-model="form.code" placeholder="如：USER:VIEW" :disabled="form.code === 'ROOT'" />
         </el-form-item>
 
         <el-form-item label="权限名称" prop="name">
@@ -19,7 +19,7 @@
         </el-form-item>
 
         <el-form-item label="权限类型" prop="type">
-          <el-select v-model="form.type" :disabled="isEdit || form.code === 'ROOT'" style="width: 100%">
+          <el-select v-model="form.type" :disabled="form.code === 'ROOT'" style="width: 100%">
             <el-option label="根目录" value="ROOT" />
             <el-option label="菜单类型" value="MENU" />
             <el-option label="页面" value="PAGE" />
@@ -28,7 +28,7 @@
         </el-form-item>
 
         <el-form-item label="父权限" prop="parentId">
-          <el-select v-model="form.parentId" placeholder="请选择父权限" :disabled="form.type === 'ROOT' || isEdit" style="width: 100%" clearable>
+          <el-select v-model="form.parentId" placeholder="请选择父权限" :disabled="form.type === 'ROOT'" style="width: 100%" clearable>
             <el-option
               v-for="item in availableParents"
               :key="item.id"
@@ -97,8 +97,13 @@ const availableParents = computed(() => {
   if (!form.type || form.type === 'ROOT') return []
 
   const parents = []
+  const seenIds = new Set()
   const addParents = (nodes) => {
     for (const node of nodes) {
+      // 跳过自身和已添加的
+      if (seenIds.has(node.id)) continue
+      seenIds.add(node.id)
+
       const canSelect =
         (form.type === 'MENU' && node.type === 'ROOT') ||
         (form.type === 'PAGE' && node.type === 'MENU') ||
@@ -191,3 +196,43 @@ onMounted(async () => {
   loadFormData()
 })
 </script>
+
+<style scoped>
+/* 页面标题区 */
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.page-title h1 {
+  margin: 0 0 4px;
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.3px;
+}
+
+.page-title p {
+  margin: 0;
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+/* 编辑页面通用样式 */
+.form-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border-default);
+}
+</style>

@@ -166,13 +166,13 @@ onMounted(() => {
   margin: 0 0 8px;
   font-size: 24px;
   font-weight: 700;
-  color: #1E293B;
+  color: var(--text-primary);
 }
 
 .page-header-content p {
   margin: 0;
   font-size: 14px;
-  color: #64748B;
+  color: var(--text-secondary);
 }
 
 .table-card {
@@ -187,6 +187,6 @@ onMounted(() => {
 .latest-publish h4,
 .publish-stats h4 {
   margin-bottom: 15px;
-  color: #303133;
+  color: var(--text-primary);
 }
 </style>

@@ -127,7 +127,7 @@ onMounted(() => {
 }
 
 .time-text {
-  color: #64748B;
+  color: var(--text-secondary);
   font-size: 13px;
 }
 
@@ -149,5 +149,20 @@ onMounted(() => {
   margin-top: 24px;
   display: flex;
   justify-content: flex-end;
+}
+
+/* 页面标题区 */
+.page-title h1 {
+  margin: 0 0 4px;
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.3px;
+}
+
+.page-title p {
+  margin: 0;
+  font-size: 14px;
+  color: var(--text-secondary);
 }
 </style>

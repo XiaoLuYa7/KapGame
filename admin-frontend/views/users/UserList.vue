@@ -62,26 +62,22 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="260" fixed="right">
+        <el-table-column v-if="hasAnyAction" label="操作" width="260" fixed="right">
           <template #default="{ row }">
             <div class="action-buttons">
-              <el-button type="primary" text size="small" @click="viewDetail(row)">
-                <el-icon><View /></el-icon>
-                详情
-              </el-button>
-              <el-button type="success" text size="small" @click="editUser(row)">
+              <el-button v-if="canEdit" type="success" text size="small" @click="editUser(row)">
                 <el-icon><Edit /></el-icon>
                 编辑
               </el-button>
-              <el-button v-if="row.status !== 'BANNED'" type="warning" text size="small" @click="handleBan(row)">
+              <el-button v-if="canEdit && row.status !== 'BANNED'" type="warning" text size="small" @click="handleBan(row)">
                 <el-icon><Lock /></el-icon>
                 封禁
               </el-button>
-              <el-button v-else type="info" text size="small" @click="handleUnban(row)">
+              <el-button v-if="canEdit && row.status === 'BANNED'" type="info" text size="small" @click="handleUnban(row)">
                 <el-icon><Unlock /></el-icon>
                 解封
               </el-button>
-              <el-button type="danger" text size="small" @click="deleteUser(row)">
+              <el-button v-if="canDelete" type="danger" text size="small" @click="deleteUser(row)">
                 <el-icon><Delete /></el-icon>
               </el-button>
             </div>
@@ -116,12 +112,18 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Search, View, Edit, Delete, Lock, Unlock } from '@element-plus/icons-vue'
 import { getUsers, deleteUser as deleteUserApi, banUser, unbanUser } from '@/apis/users'
+import { hasFunctionPermission } from '@/utils/permission'
 import UserDetail from './UserDetail.vue'
 import UserEdit from './UserEdit.vue'
+
+// 权限检查 - 使用 computed 确保响应式
+const canEdit = computed(() => hasFunctionPermission('USER:EDIT'))
+const canDelete = computed(() => hasFunctionPermission('USER:DELETE'))
+const hasAnyAction = computed(() => canEdit.value || canDelete.value)
 
 const users = ref([])
 const loading = ref(false)
@@ -246,12 +248,12 @@ onMounted(() => {
 }
 
 .diamond {
-  color: #6366F1;
+  color: var(--color-primary);
   font-weight: 600;
 }
 
 .gold {
-  color: #F59E0B;
+  color: var(--color-warning);
   font-weight: 600;
 }
 
@@ -275,5 +277,54 @@ onMounted(() => {
   margin-top: 24px;
   display: flex;
   justify-content: flex-end;
+}
+
+/* 通用样式 */
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.page-title h1 {
+  margin: 0 0 4px;
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.3px;
+}
+
+.page-title p {
+  margin: 0;
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.search-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.search-bar .el-input {
+  width: 260px;
+}
+
+.header-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.diamond {
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.gold {
+  color: var(--color-warning);
+  font-weight: 600;
 }
 </style>

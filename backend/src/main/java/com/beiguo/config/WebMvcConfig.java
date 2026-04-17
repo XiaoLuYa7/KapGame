@@ -1,6 +1,8 @@
 package com.beiguo.config;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
@@ -14,6 +16,9 @@ public class WebMvcConfig implements WebMvcConfigurer {
     private static final String STATIC_RESOURCES_DIR = "static-resources";
     // 访问静态资源的 URL 前缀
     private static final String STATIC_RESOURCES_PATH = "/static/**";
+
+    @Autowired
+    private OnlineStatusInterceptor onlineStatusInterceptor;
 
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
@@ -34,5 +39,15 @@ public class WebMvcConfig implements WebMvcConfigurer {
 
         System.out.println("[静态资源配置] 资源目录: " + absolutePath);
         System.out.println("[静态资源配置] 访问路径: http://localhost:8080/static/...");
+    }
+
+    @Override
+    public void addInterceptors(InterceptorRegistry registry) {
+        registry.addInterceptor(onlineStatusInterceptor)
+                .addPathPatterns("/admin/**")
+                .excludePathPatterns(
+                        "/admin/auth/login",
+                        "/admin/auth/logout"
+                );
     }
 }

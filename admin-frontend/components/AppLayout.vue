@@ -30,7 +30,7 @@
           </router-link>
         </div>
 
-        <div class="menu-section">
+        <div class="menu-section" v-if="systemMenu.length > 0">
           <span class="menu-label">系统</span>
           <router-link
             v-for="item in systemMenu"
@@ -81,6 +81,10 @@
           </div>
         </div>
         <div class="topbar-actions">
+          <el-button circle @click="toggleTheme" class="theme-toggle-btn">
+            <el-icon v-if="isDark()"><Sunny /></el-icon>
+            <el-icon v-else><Moon /></el-icon>
+          </el-button>
           <el-button circle>
             <el-icon><Bell /></el-icon>
           </el-button>
@@ -134,8 +138,11 @@ import {
   Lock,
   Promotion,
   Money,
-  Message
+  Message,
+  Sunny,
+  Moon
 } from '@element-plus/icons-vue'
+import { useTheme } from '@/composables/useTheme'
 import storage from '@/utils/storage'
 import { hasPagePermission, clearPermissions } from '@/utils/permission'
 import api from '@/apis'
@@ -143,6 +150,9 @@ import api from '@/apis'
 const route = useRoute()
 const router = useRouter()
 const isCollapsed = ref(false)
+
+// 主题切换
+const { theme, toggleTheme, isDark } = useTheme()
 
 const username = ref('')
 const userInitial = computed(() => {
@@ -234,13 +244,13 @@ onMounted(async () => {
 .layout-wrapper {
   display: flex;
   min-height: 100vh;
-  background: #F8FAFC;
+  background: var(--bg-page);
 }
 
 /* 侧边栏 */
 .sidebar {
-  width: 208px;
-  background: #1E293B;
+  width: 220px;
+  background: var(--bg-card);
   display: flex;
   flex-direction: column;
   position: fixed;
@@ -248,7 +258,8 @@ onMounted(async () => {
   top: 0;
   bottom: 0;
   z-index: 100;
-  transition: width 0.3s ease;
+  transition: width 0.2s ease, box-shadow 0.2s ease;
+  border-right: 1px solid var(--border-default);
 }
 
 .sidebar.is-collapsed {
@@ -260,7 +271,7 @@ onMounted(async () => {
   align-items: center;
   justify-content: center;
   padding: 20px 16px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid var(--border-light);
 }
 
 .logo {
@@ -272,7 +283,7 @@ onMounted(async () => {
 .logo-icon {
   width: 36px;
   height: 36px;
-  background: linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%);
+  background: var(--gradient-primary);
   border-radius: 10px;
   display: flex;
   align-items: center;
@@ -282,16 +293,17 @@ onMounted(async () => {
 }
 
 .logo-icon svg {
-  width: 22px;
-  height: 22px;
+  width: 20px;
+  height: 20px;
 }
 
 .logo-text {
-  font-size: 18px;
+  font-size: 17px;
   font-weight: 700;
-  color: #F8FAFC;
+  color: var(--text-primary);
   white-space: nowrap;
-  transition: opacity 0.3s ease;
+  transition: opacity 0.2s ease;
+  letter-spacing: -0.3px;
 }
 
 .sidebar.is-collapsed .logo-text {
@@ -306,21 +318,21 @@ onMounted(async () => {
 }
 
 .menu-section {
-  margin-bottom: 24px;
+  margin-bottom: 20px;
 }
 
 .menu-label {
   display: block;
   font-size: 11px;
   font-weight: 600;
-  color: #64748B;
+  color: var(--text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.6px;
   padding: 0 12px;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
   white-space: nowrap;
-  height: 20px;
-  transition: opacity 0.3s ease;
+  height: 18px;
+  transition: opacity 0.2s ease;
 }
 
 .sidebar.is-collapsed .menu-label {
@@ -335,35 +347,37 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 12px;
-  color: #94A3B8;
+  padding: 10px 12px;
+  color: var(--text-secondary);
   text-decoration: none;
-  border-radius: 10px;
-  margin-bottom: 4px;
-  transition: all 0.2s ease;
+  border-radius: 8px;
+  margin-bottom: 2px;
+  transition: all 0.15s ease;
   white-space: nowrap;
+  font-weight: 500;
+  font-size: 14px;
 }
 
 .menu-item:hover {
-  background: rgba(255, 255, 255, 0.06);
-  color: #F8FAFC;
+  background: var(--purple-50);
+  color: var(--primary);
 }
 
 .menu-item.is-active {
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.2) 0%, rgba(139, 92, 246, 0.2) 100%);
-  color: #A78BFA;
+  background: var(--purple-50);
+  color: var(--primary);
+  font-weight: 600;
 }
 
 .menu-item .el-icon {
   flex-shrink: 0;
-  width: 20px;
+  width: 18px;
   text-align: center;
 }
 
 .menu-item .menu-text {
   font-size: 14px;
-  font-weight: 500;
-  transition: opacity 0.3s ease;
+  transition: opacity 0.2s ease;
 }
 
 .sidebar.is-collapsed .menu-text {
@@ -372,41 +386,41 @@ onMounted(async () => {
 
 .sidebar.is-collapsed .menu-item {
   justify-content: center;
-  padding: 12px 8px;
+  padding: 10px 8px;
 }
 
 /* 侧边栏底部 */
 .sidebar-footer {
   padding: 16px;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-top: 1px solid var(--border-light);
 }
 
 .user-info {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 12px;
+  gap: 10px;
   margin-bottom: 12px;
 }
 
 .user-avatar {
-  width: 40px;
-  height: 40px;
-  background: linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%);
+  width: 36px;
+  height: 36px;
+  background: var(--gradient-primary);
   border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
   color: white;
   font-weight: 600;
-  font-size: 16px;
+  font-size: 14px;
   flex-shrink: 0;
 }
 
 .user-details {
   display: flex;
   flex-direction: column;
-  transition: opacity 0.3s ease;
+  transition: opacity 0.2s ease;
 }
 
 .sidebar.is-collapsed .user-details {
@@ -414,62 +428,53 @@ onMounted(async () => {
 }
 
 .user-name {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
-  color: #F8FAFC;
+  color: var(--text-primary);
   text-align: center;
 }
 
 .user-role {
-  font-size: 12px;
-  color: #64748B;
+  font-size: 11px;
+  color: var(--text-muted);
   text-align: center;
 }
 
 .logout-btn {
   width: 100%;
   justify-content: center;
-  gap: 8px;
-  background: rgba(239, 68, 68, 0.15);
-  border: 1px solid rgba(239, 68, 68, 0.3);
-  color: #F87171;
-  border-radius: 10px;
-  padding: 10px 16px;
-  font-size: 14px;
+  gap: 6px;
+  background: var(--purple-50) !important;
+  border: 1px solid var(--purple-200) !important;
+  color: var(--purple-600) !important;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 13px;
   font-weight: 500;
-  transition: all 0.2s ease;
+  transition: all 0.15s ease;
 }
 
 .logout-btn:hover {
-  background: rgba(239, 68, 68, 0.25);
-  border-color: rgba(239, 68, 68, 0.5);
-  color: #FCA5A5;
+  background: var(--purple-100) !important;
+  border-color: var(--purple-300) !important;
 }
 
 .sidebar.is-collapsed .logout-btn {
-  padding: 10px;
+  padding: 8px;
 }
 
 .sidebar.is-collapsed .logout-btn span:not(.el-icon) {
   display: none;
 }
 
-.logout-icon-only {
-  display: none;
-}
-
-.sidebar.is-collapsed .logout-icon-only {
-  display: inline;
-}
-
 /* 主内容区 */
 .main-wrapper {
   flex: 1;
-  margin-left: 208px;
+  margin-left: 220px;
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  transition: margin-left 0.3s ease;
+  transition: margin-left 0.2s ease;
 }
 
 .main-wrapper.sidebar-collapsed {
@@ -478,9 +483,9 @@ onMounted(async () => {
 
 /* 顶部栏 */
 .topbar {
-  height: 64px;
-  background: white;
-  border-bottom: 1px solid #E2E8F0;
+  height: 60px;
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border-default);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -497,14 +502,16 @@ onMounted(async () => {
 }
 
 .collapse-btn {
-  background: #F1F5F9 !important;
-  border: none !important;
-  color: #64748B !important;
+  background: transparent !important;
+  border: 1px solid var(--border-default) !important;
+  color: var(--text-secondary) !important;
+  border-radius: 8px !important;
 }
 
 .collapse-btn:hover {
-  background: #E2E8F0 !important;
-  color: #1E293B !important;
+  background: var(--purple-50) !important;
+  border-color: var(--purple-300) !important;
+  color: var(--primary) !important;
 }
 
 .breadcrumb {
@@ -515,66 +522,71 @@ onMounted(async () => {
 
 .breadcrumb-item {
   font-size: 14px;
-  color: #64748B;
+  color: var(--text-muted);
 }
 
 .breadcrumb-item.active {
-  color: #1E293B;
+  color: var(--text-primary);
   font-weight: 500;
 }
 
 .breadcrumb-separator {
-  color: #CBD5E1;
+  color: var(--border-default);
 }
 
 .topbar-actions {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
 }
 
 .topbar-actions .el-button {
-  background: #F1F5F9;
-  border: none;
-  color: #64748B;
+  background: transparent !important;
+  border: 1px solid var(--border-default) !important;
+  color: var(--text-secondary) !important;
+  border-radius: 8px !important;
 }
 
 .topbar-actions .el-button:hover {
-  background: #E2E8F0;
-  color: #1E293B;
+  background: var(--purple-50) !important;
+  border-color: var(--purple-300) !important;
+  color: var(--primary) !important;
 }
 
 .user-trigger {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 6px 12px;
-  border-radius: 10px;
+  padding: 6px 10px;
+  border-radius: 8px;
   cursor: pointer;
-  transition: background 0.2s ease;
+  transition: all 0.15s ease;
+  border: 1px solid var(--border-default);
+  background: transparent;
 }
 
 .user-trigger:hover {
-  background: #F1F5F9;
+  background: var(--purple-50);
+  border-color: var(--purple-200);
 }
 
 .user-avatar-small {
-  width: 32px;
-  height: 32px;
-  background: linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%);
+  width: 28px;
+  height: 28px;
+  background: var(--gradient-primary);
   border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
   color: white;
   font-weight: 600;
-  font-size: 14px;
+  font-size: 12px;
 }
 
 .user-name-small {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
-  color: #1E293B;
+  color: var(--text-primary);
 }
 
 /* 内容区 */
@@ -583,19 +595,29 @@ onMounted(async () => {
   padding: 24px;
 }
 
+/* 主题切换按钮 */
+.theme-toggle-btn {
+  background: transparent !important;
+  border: 1px solid var(--border-default) !important;
+  color: var(--text-secondary) !important;
+  border-radius: 8px !important;
+  transition: all 0.15s ease;
+}
+
+.theme-toggle-btn:hover {
+  background: var(--purple-50) !important;
+  border-color: var(--purple-300) !important;
+  color: var(--primary) !important;
+}
+
 /* 页面切换动画 */
 .fade-enter-active,
 .fade-leave-active {
-  transition: opacity 0.2s ease, transform 0.2s ease;
+  transition: opacity 0.15s ease;
 }
 
-.fade-enter-from {
-  opacity: 0;
-  transform: translateY(10px);
-}
-
+.fade-enter-from,
 .fade-leave-to {
   opacity: 0;
-  transform: translateY(-10px);
 }
 </style>

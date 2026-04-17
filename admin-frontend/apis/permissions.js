@@ -27,3 +27,7 @@ export const getPermissionCategories = () => {
 export const getPermissionTree = () => {
   return api.get('/admin/permissions/tree')
 }
+
+export const getAllPermissions = () => {
+  return api.get('/admin/permissions/all')
+}

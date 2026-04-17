@@ -215,8 +215,7 @@ public class AdminUserController {
                 if (code == null) continue;
 
                 // ROOT 和页面权限
-                if (code.equals("ROOT") || code.startsWith("MODULE:") ||
-                    (p.getIsPage() != null && p.getIsPage())) {
+                if (code.equals("ROOT") || code.startsWith("MODULE:")) {
                     if (!pages.contains(code)) {
                         pages.add(code);
                     }
@@ -247,6 +246,8 @@ public class AdminUserController {
         dto.setStatus(adminUser.getStatus());
         dto.setLastLoginTime(adminUser.getLastLoginTime());
         dto.setLoginCount(adminUser.getLoginCount());
+        dto.setOnlineStatus(adminUser.getOnlineStatus());
+        dto.setLastHeartbeatTime(adminUser.getLastHeartbeatTime());
         dto.setCreateTime(adminUser.getCreateTime());
         dto.setUpdateTime(adminUser.getUpdateTime());
         dto.setCreatedBy(adminUser.getCreatedBy());

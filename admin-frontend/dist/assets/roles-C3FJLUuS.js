@@ -1,0 +1,1 @@
+import{a as s}from"./index-DEVO6bIT.js";const o=e=>s.get("/admin/roles",{params:e}),n=e=>s.get(`/admin/roles/${e}`),a=e=>s.post("/admin/roles",e),i=(e,r)=>s.put(`/admin/roles/${e}`,r),l=e=>s.delete(`/admin/roles/${e}`),m=()=>s.get("/admin/permissions/tree"),d=e=>s.get(`/admin/roles/${e}/permissions/tree`);export{d as a,m as b,n as c,l as d,a as e,o as g,i as u};

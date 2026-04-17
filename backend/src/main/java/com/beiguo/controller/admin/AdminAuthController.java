@@ -90,52 +90,40 @@ public class AdminAuthController {
             List<Map<String, Object>> systemMenus = new ArrayList<>();
 
             if (role != null && role.getPermissions() != null) {
-                Set<Permission> permissions = role.getPermissions();
+                // 获取用户拥有的所有权限
+                Set<Permission> userPermissions = role.getPermissions();
 
-                // 获取 MENU 类型的权限
-                Long menuMainId = null;
-                Long menuSystemId = null;
-                for (Permission p : permissions) {
-                    if ("MENU_MAIN".equals(p.getCode())) {
-                        menuMainId = p.getId();
-                    } else if ("MENU_SYSTEM".equals(p.getCode())) {
-                        menuSystemId = p.getId();
-                    }
+                // 查找ROOT菜单
+                Permission rootPermission = permissionRepository.findByCode("ROOT").orElse(null);
+                if (rootPermission == null) {
+                    return ApiResponse.error("ROOT权限未找到");
                 }
+                final Long rootId = rootPermission.getId();
 
-                // 获取主菜单下的页面（按orderNum排序）
-                if (menuMainId != null) {
-                    final Long mainId = menuMainId;
-                    List<Permission> mainPages = permissions.stream()
-                            .filter(p -> "PAGE".equals(p.getType()) && mainId.equals(p.getParentId()))
-                            .sorted(Comparator.comparing(Permission::getOrderNum, Comparator.nullsLast(Comparator.naturalOrder())))
-                            .collect(Collectors.toList());
+                // 查询所有MENU类型的菜单（ROOT的直接子节点）
+                List<Permission> menuPermissions = permissionRepository.findByParentIdAndType(rootId, "MENU");
+                // 按orderNum排序
+                menuPermissions.sort(Comparator.comparing(p -> p.getOrderNum() != null ? p.getOrderNum() : 0));
 
-                    for (Permission p : mainPages) {
-                        Map<String, Object> menu = new HashMap<>();
-                        menu.put("path", p.getRoutePath());
-                        menu.put("name", p.getName());
-                        menu.put("icon", p.getIcon());
-                        menu.put("code", p.getCode());
-                        mainMenus.add(menu);
-                    }
-                }
+                for (Permission menu : menuPermissions) {
+                    // 查询该菜单下的所有子页面（用户有权限的）
+                    List<Permission> childPages = userPermissions.stream()
+                            .filter(p -> menu.getId().equals(p.getParentId()))
+                            .sorted(Comparator.comparing(p -> p.getOrderNum() != null ? p.getOrderNum() : 0))
+                            .toList();
 
-                // 获取系统菜单下的页面（按orderNum排序）
-                if (menuSystemId != null) {
-                    final Long sysId = menuSystemId;
-                    List<Permission> systemPages = permissions.stream()
-                            .filter(p -> "PAGE".equals(p.getType()) && sysId.equals(p.getParentId()))
-                            .sorted(Comparator.comparing(Permission::getOrderNum, Comparator.nullsLast(Comparator.naturalOrder())))
-                            .collect(Collectors.toList());
+                    if (childPages.isEmpty()) continue;
 
-                    for (Permission p : systemPages) {
-                        Map<String, Object> menu = new HashMap<>();
-                        menu.put("path", p.getRoutePath());
-                        menu.put("name", p.getName());
-                        menu.put("icon", p.getIcon());
-                        menu.put("code", p.getCode());
-                        systemMenus.add(menu);
+                    // 根据菜单code判断分组
+                    List<Map<String, Object>> targetMenus = "MENU_MAIN".equals(menu.getCode()) ? mainMenus : systemMenus;
+
+                    for (Permission page : childPages) {
+                        Map<String, Object> menuItem = new HashMap<>();
+                        menuItem.put("path", page.getRoutePath());
+                        menuItem.put("name", page.getName());
+                        menuItem.put("icon", page.getIcon() != null ? page.getIcon() : "Setting");
+                        menuItem.put("code", page.getCode());
+                        targetMenus.add(menuItem);
                     }
                 }
             }

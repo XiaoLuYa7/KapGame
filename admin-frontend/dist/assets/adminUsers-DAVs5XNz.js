@@ -1,0 +1,1 @@
+import{a as s}from"./index-DEVO6bIT.js";const t=e=>s.get("/admin/admin-users",{params:e}),a=e=>s.get(`/admin/admin-users/${e}`),d=e=>s.post("/admin/admin-users",e),i=(e,n)=>s.put(`/admin/admin-users/${e}`,n),m=e=>s.delete(`/admin/admin-users/${e}`),u=()=>s.get("/admin/admin-users/roles");export{u as a,a as b,d as c,m as d,t as g,i as u};

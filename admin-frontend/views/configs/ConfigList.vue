@@ -5,7 +5,7 @@
         <h1>配置管理</h1>
         <p>管理系统中的所有配置项</p>
       </div>
-      <el-button type="primary" @click="router.push('/configs/edit')">
+      <el-button v-if="canEdit" type="primary" @click="router.push('/configs/edit')">
         创建配置
       </el-button>
     </div>
@@ -51,10 +51,10 @@
             {{ formatDateTime(row.createTime) }}
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="160" fixed="right">
+        <el-table-column v-if="hasAnyAction" label="操作" width="160" fixed="right">
           <template #default="{ row }">
-            <el-button type="primary" text size="small" @click="router.push(`/configs/${row.id}/edit`)">编辑</el-button>
-            <el-button type="danger" text size="small" @click="deleteConfig(row)">删除</el-button>
+            <el-button v-if="canEdit" type="primary" text size="small" @click="router.push(`/configs/${row.id}/edit`)">编辑</el-button>
+            <el-button v-if="canEdit" type="danger" text size="small" @click="deleteConfig(row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -74,12 +74,17 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getConfigs, deleteConfig as deleteConfigApi } from '@/apis/configs'
+import { hasFunctionPermission } from '@/utils/permission'
 
 const router = useRouter()
+
+// 权限检查 - 使用 computed 确保响应式
+const canEdit = computed(() => hasFunctionPermission('CONFIG:EDIT'))
+const hasAnyAction = computed(() => canEdit.value)
 
 const configs = ref([])
 const loading = ref(false)
@@ -173,13 +178,13 @@ onMounted(() => {
   margin: 0 0 8px;
   font-size: 24px;
   font-weight: 700;
-  color: #1E293B;
+  color: var(--text-primary);
 }
 
 .page-header-content p {
   margin: 0;
   font-size: 14px;
-  color: #64748B;
+  color: var(--text-secondary);
 }
 
 .table-card {

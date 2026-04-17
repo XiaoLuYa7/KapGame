@@ -112,9 +112,9 @@
             {{ formatDate(row.createdAt) }}
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="100" fixed="right">
+        <el-table-column v-if="hasAnyAction" label="操作" width="100" fixed="right">
           <template #default="{ row }">
-            <el-button type="danger" text size="small" @click="handleDelete(row)">
+            <el-button v-if="canDelete" type="danger" text size="small" @click="handleDelete(row)">
               <el-icon><Delete /></el-icon>
               删除
             </el-button>
@@ -174,15 +174,20 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Delete, Shop, Monitor, Trophy } from '@element-plus/icons-vue'
 import { getEarnings, getEarningsSummary, createEarning, deleteEarning } from '@/apis/earnings'
 import { useDict } from '@/composables/useDict'
+import { hasFunctionPermission } from '@/utils/permission'
 
 const route = useRoute()
 const { loadDict, getDict, getDictLabel, getDictCodeLabel } = useDict()
+
+// 权限检查 - 使用 computed 确保响应式
+const canDelete = computed(() => hasFunctionPermission('EARNINGS:DELETE'))
+const hasAnyAction = computed(() => canDelete.value)
 
 const loading = ref(false)
 const showAddDialog = ref(false)
@@ -360,13 +365,13 @@ onMounted(() => {
   margin: 0 0 8px;
   font-size: 24px;
   font-weight: 700;
-  color: #1E293B;
+  color: var(--text-primary);
 }
 
 .page-header-content p {
   margin: 0;
   font-size: 14px;
-  color: #64748B;
+  color: var(--text-secondary);
 }
 
 .filter-card {
@@ -387,7 +392,7 @@ onMounted(() => {
 }
 
 .filter-label {
-  color: #606266;
+  color: var(--text-secondary);
   font-size: 14px;
   white-space: nowrap;
 }
@@ -403,7 +408,7 @@ onMounted(() => {
   gap: 16px;
   margin-top: 20px;
   padding-top: 20px;
-  border-top: 1px solid #F1F5F9;
+  border-top: 1px solid var(--border-color);
 }
 
 .summary-card {
@@ -411,7 +416,7 @@ onMounted(() => {
   align-items: center;
   gap: 12px;
   padding: 16px 20px;
-  background: #F8FAFC;
+  background: var(--bg-page);
   border-radius: 12px;
   flex: 1;
 }
@@ -447,17 +452,17 @@ onMounted(() => {
 
 .summary-label {
   font-size: 12px;
-  color: #64748B;
+  color: var(--text-secondary);
 }
 
 .summary-value {
   font-size: 18px;
   font-weight: 600;
-  color: #1E293B;
+  color: var(--text-primary);
 }
 
 .amount-value {
-  color: #10B981;
+  color: var(--color-success);
   font-weight: 600;
 }
 

@@ -15,6 +15,8 @@ public class AdminUserDTO {
     private String status;
     private LocalDateTime lastLoginTime;
     private Integer loginCount;
+    private String onlineStatus; // ONLINE, OFFLINE
+    private LocalDateTime lastHeartbeatTime; // 最后心跳时间
     private LocalDateTime createTime;
     private LocalDateTime updateTime;
     private String createdBy;

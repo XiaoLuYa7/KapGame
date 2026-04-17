@@ -5,15 +5,23 @@
         <h1>权限管理</h1>
         <p>管理系统中的所有权限</p>
       </div>
-      <el-button type="primary" @click="router.push('/permissions/add')">新增</el-button>
+      <el-button v-if="canCreate" type="primary" @click="router.push('/permissions/add')">新增</el-button>
     </div>
 
     <el-card class="table-card">
       <div class="search-form">
         <span class="search-label">权限代码</span>
-        <el-input v-model="searchForm.code" placeholder="请输入权限代码" style="width: 200px" clearable />
+        <el-input v-model="searchForm.code" placeholder="请输入权限代码" style="width: 150px" clearable />
         <span class="search-label">权限名称</span>
-        <el-input v-model="searchForm.name" placeholder="请输入权限名称" style="width: 200px" clearable />
+        <el-input v-model="searchForm.name" placeholder="请输入权限名称" style="width: 150px" clearable />
+        <span class="search-label">页面类型</span>
+        <el-select v-model="searchForm.type" placeholder="请选择" style="width: 120px" clearable>
+          <el-option v-for="d in getDict('permission_type')" :key="d.code" :label="d.value" :value="d.code" />
+        </el-select>
+        <span class="search-label">父权限</span>
+        <el-select v-model="searchForm.parentId" placeholder="请选择" style="width: 200px" clearable filterable>
+          <el-option v-for="p in parentPermissionOptions" :key="p.id" :label="p.label" :value="p.id" />
+        </el-select>
         <div class="search-buttons">
           <el-button @click="resetSearch">重置</el-button>
           <el-button type="primary" @click="handleSearch">查询</el-button>
@@ -44,10 +52,10 @@
         </el-table-column>
         <el-table-column prop="icon" label="图标" width="100" />
         <el-table-column prop="description" label="描述" />
-        <el-table-column label="操作" width="150">
+        <el-table-column v-if="hasAnyAction" label="操作" width="150">
           <template #default="{ row }">
-            <el-button size="small" @click="router.push(`/permissions/${row.id}/edit`)">编辑</el-button>
-            <el-button v-if="row.isDeletable !== false" size="small" type="danger" @click="deletePermission(row)">删除</el-button>
+            <el-button v-if="canEdit" size="small" @click="router.push(`/permissions/${row.id}/edit`)">编辑</el-button>
+            <el-button v-if="canDelete && row.isDeletable !== false" size="small" type="danger" @click="deletePermission(row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -67,14 +75,25 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getPermissions, deletePermission as deletePermissionApi } from '@/apis/permissions'
+import { getPermissions, getAllPermissions, deletePermission as deletePermissionApi } from '@/apis/permissions'
+import { useDict } from '@/composables/useDict'
+import { hasFunctionPermission } from '@/utils/permission'
 
 const router = useRouter()
 
+const { loadDict, getDict } = useDict()
+
+// 权限检查 - 使用 computed 确保响应式
+const canCreate = computed(() => hasFunctionPermission('PERMISSION:CREATE'))
+const canEdit = computed(() => hasFunctionPermission('PERMISSION:EDIT'))
+const canDelete = computed(() => hasFunctionPermission('PERMISSION:DELETE'))
+const hasAnyAction = computed(() => canEdit.value || canDelete.value)
+
 const permissions = ref([])
+const parentPermissionOptions = ref([])
 const loading = ref(false)
 const pagination = ref({
   page: 1,
@@ -84,7 +103,9 @@ const pagination = ref({
 
 const searchForm = ref({
   code: '',
-  name: ''
+  name: '',
+  type: null,
+  parentId: null
 })
 
 const getTypeText = (type) => {
@@ -115,6 +136,12 @@ const loadPermissions = async () => {
     if (searchForm.value.name) {
       params.name = searchForm.value.name
     }
+    if (searchForm.value.type) {
+      params.type = searchForm.value.type
+    }
+    if (searchForm.value.parentId) {
+      params.parentId = searchForm.value.parentId
+    }
     const res = await getPermissions(params)
     permissions.value = res.data.content || res.data
     pagination.value.total = res.data.totalElements || 0
@@ -126,9 +153,23 @@ const loadPermissions = async () => {
   }
 }
 
+const loadParentPermissionOptions = async () => {
+  try {
+    const res = await getAllPermissions()
+    const list = res.data || []
+    parentPermissionOptions.value = list
+      .filter(p => p.type === 'ROOT' || p.type === 'MENU' || p.type === 'PAGE')
+      .map(p => ({ id: p.id, label: p.id + ' - ' + p.code + ' - ' + p.name }))
+  } catch (error) {
+    console.error(error)
+  }
+}
+
 const resetSearch = () => {
   searchForm.value.code = ''
   searchForm.value.name = ''
+  searchForm.value.type = null
+  searchForm.value.parentId = null
   pagination.value.page = 1
   loadPermissions()
 }
@@ -163,6 +204,8 @@ const deletePermission = (row) => {
 
 onMounted(() => {
   loadPermissions()
+  loadParentPermissionOptions()
+  loadDict(['permission_type'])
 })
 </script>
 
@@ -187,13 +230,13 @@ onMounted(() => {
   margin: 0 0 8px;
   font-size: 24px;
   font-weight: 700;
-  color: #1E293B;
+  color: var(--text-primary);
 }
 
 .page-header-content p {
   margin: 0;
   font-size: 14px;
-  color: #64748B;
+  color: var(--text-secondary);
 }
 
 .table-card {
@@ -209,7 +252,7 @@ onMounted(() => {
 
 .search-label {
   font-size: 14px;
-  color: #606266;
+  color: var(--text-secondary);
   white-space: nowrap;
 }
 

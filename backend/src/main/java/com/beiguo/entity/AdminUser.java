@@ -52,6 +52,12 @@ public class AdminUser implements UserDetails {
     @Column(name = "login_count")
     private Integer loginCount = 0;
 
+    @Column(name = "online_status", length = 20)
+    private String onlineStatus = "OFFLINE"; // ONLINE, OFFLINE
+
+    @Column(name = "last_heartbeat_time")
+    private LocalDateTime lastHeartbeatTime; // 最后心跳时间
+
     @Column(name = "create_time")
     private LocalDateTime createTime;
 
