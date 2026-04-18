@@ -1,5 +1,276 @@
-/* pages/login/login.wxss */
-.header {
+/* ============================================
+   登录页样式 - 柔和玻璃 (Soft Glass)
+   支持白天/黑夜模式自动切换
+   ============================================ */
+
+/* ---------- 页面容器 ---------- */
+.login-container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-xl) var(--space-lg);
+  background: var(--bg-base);
+  position: relative;
+  overflow: hidden;
+}
+
+/* ---------- Logo区域 ---------- */
+.login-logo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: var(--space-2xl);
+}
+
+.logo-icon {
+  font-size: 96rpx;
+  margin-bottom: var(--space-md);
+  /* Glow效果 */
+  filter: drop-shadow(0 0 20rpx var(--accent-glow));
+  animation: logo-pulse 3s ease-in-out infinite;
+}
+
+.logo-title {
+  font-size: 48rpx;
+  font-weight: 700;
+  color: var(--text-bright);
+  letter-spacing: 4rpx;
+  margin-bottom: var(--space-xs);
+}
+
+.logo-subtitle {
+  font-size: 26rpx;
+  color: var(--text-secondary);
+  letter-spacing: 2rpx;
+}
+
+/* Logo动画 */
+@keyframes logo-pulse {
+  0%, 100% {
+    filter: drop-shadow(0 0 20rpx var(--accent-glow));
+    transform: scale(1);
+  }
+  50% {
+    filter: drop-shadow(0 0 30rpx var(--accent-glow));
+    transform: scale(1.02);
+  }
+}
+
+/* ---------- 登录卡片 - 毛玻璃效果 ---------- */
+.login-card {
+  width: 100%;
+  max-width: 600rpx;
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1rpx solid var(--glass-border);
+  border-radius: var(--radius-xl);
+  padding: var(--space-2xl);
+  box-shadow: var(--shadow-elevated);
+  position: relative;
+  overflow: hidden;
+}
+
+/* 顶部渐变装饰线 */
+.login-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 200rpx;
+  height: 6rpx;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    var(--accent-primary) 30%,
+    var(--accent-bright) 50%,
+    var(--accent-primary) 70%,
+    transparent 100%
+  );
+  border-radius: 0 0 6rpx 6rpx;
+}
+
+/* ---------- 卡片头部 ---------- */
+.login-header {
   text-align: center;
-  margin-bottom: 40rpx;
+  margin-bottom: var(--space-xl);
+}
+
+.login-title {
+  display: block;
+  font-size: 40rpx;
+  font-weight: 600;
+  color: var(--text-bright);
+  margin-bottom: var(--space-sm);
+}
+
+.login-subtitle {
+  display: block;
+  font-size: 26rpx;
+  color: var(--text-secondary);
+}
+
+/* ---------- 输入框组 ---------- */
+.input-group {
+  margin-bottom: var(--space-lg);
+}
+
+.input-label {
+  display: block;
+  font-size: 26rpx;
+  color: var(--text-secondary);
+  margin-bottom: var(--space-sm);
+  font-weight: 500;
+}
+
+.input-field {
+  width: 100%;
+  padding: var(--space-md) var(--space-lg);
+  background: var(--bg-card);
+  border: 1rpx solid var(--border-default);
+  border-radius: var(--radius-md);
+  font-size: 28rpx;
+  color: var(--text-primary);
+  transition: all var(--transition-fast);
+  box-sizing: border-box;
+}
+
+.input-field::placeholder {
+  color: var(--text-muted);
+}
+
+.input-field:focus {
+  outline: none;
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 4rpx var(--accent-glow);
+  background: var(--bg-elevated);
+}
+
+/* ---------- 提交按钮 ---------- */
+.submit-btn {
+  width: 100%;
+  padding: var(--space-md) var(--space-xl);
+  margin-top: var(--space-lg);
+  background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-dim) 100%);
+  color: #FFFFFF;
+  font-size: 32rpx;
+  font-weight: 600;
+  border: none;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-accent);
+  transition: all var(--transition-fast);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.submit-btn:hover {
+  background: linear-gradient(135deg, var(--accent-bright) 0%, var(--accent-primary) 100%);
+  box-shadow: var(--shadow-elevated);
+}
+
+.submit-btn:active {
+  transform: scale(0.98);
+}
+
+/* ---------- 切换链接 ---------- */
+.switch-area {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: var(--space-xl);
+  gap: var(--space-sm);
+}
+
+.switch-text {
+  font-size: 26rpx;
+  color: var(--text-secondary);
+}
+
+.switch-link {
+  font-size: 26rpx;
+  color: var(--accent-primary);
+  font-weight: 500;
+  transition: color var(--transition-fast);
+}
+
+.switch-link:active {
+  color: var(--accent-bright);
+}
+
+/* ---------- 底部信息 ---------- */
+.login-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  margin-top: var(--space-2xl);
+  gap: var(--space-xs);
+}
+
+.footer-text {
+  font-size: 22rpx;
+  color: var(--text-muted);
+}
+
+.footer-link {
+  font-size: 22rpx;
+  color: var(--accent-primary);
+  transition: color var(--transition-fast);
+}
+
+.footer-link:active {
+  color: var(--accent-bright);
+}
+
+/* ---------- 装饰元素 ---------- */
+.login-decoration {
+  position: absolute;
+  color: var(--accent-primary);
+  opacity: 0.3;
+  font-size: 40rpx;
+  pointer-events: none;
+}
+
+.decoration-1 {
+  top: 15%;
+  left: 10%;
+  animation: float-1 6s ease-in-out infinite;
+}
+
+.decoration-2 {
+  bottom: 20%;
+  right: 8%;
+  animation: float-2 8s ease-in-out infinite;
+}
+
+/* 装饰动画 */
+@keyframes float-1 {
+  0%, 100% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 0.3;
+  }
+  50% {
+    transform: translateY(-20rpx) rotate(15deg);
+    opacity: 0.5;
+  }
+}
+
+@keyframes float-2 {
+  0%, 100% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 0.25;
+  }
+  50% {
+    transform: translateY(15rpx) rotate(-10deg);
+    opacity: 0.4;
+  }
+}
+
+/* ---------- 安全区域适配 ---------- */
+.login-container {
+  padding-top: constant(safe-area-inset-top);
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: constant(safe-area-inset-bottom);
+  padding-bottom: env(safe-area-inset-bottom);
 }
