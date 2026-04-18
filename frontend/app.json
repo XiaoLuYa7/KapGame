@@ -1,5 +1,6 @@
 {
   "pages": [
+    "pages/shop/shop",
     "pages/home/home",
     "pages/chat/chat",
     "pages/login/login",
@@ -8,16 +9,22 @@
   ],
   "window": {
     "backgroundTextStyle": "light",
-    "navigationBarBackgroundColor": "#2c3e50",
-    "navigationBarTitleText": "背锅大作战",
+    "navigationBarBackgroundColor": "#0F1419",
+    "navigationBarTitleText": "时序裂隙",
     "navigationBarTextStyle": "white"
   },
   "tabBar": {
-    "color": "#999999",
-    "selectedColor": "#2c3e50",
-    "backgroundColor": "#ffffff",
+    "color": "#64748B",
+    "selectedColor": "#0EA5E9",
+    "backgroundColor": "#0F1419",
     "borderStyle": "black",
     "list": [
+      {
+        "pagePath": "pages/shop/shop",
+        "text": "商城",
+        "iconPath": "images/tab/shop.png",
+        "selectedIconPath": "images/tab/shop-active.png"
+      },
       {
         "pagePath": "pages/home/home",
         "text": "对战",
@@ -26,7 +33,7 @@
       },
       {
         "pagePath": "pages/chat/chat",
-        "text": "聊天",
+        "text": "消息",
         "iconPath": "images/tab/chat.png",
         "selectedIconPath": "images/tab/chat-active.png"
       }
