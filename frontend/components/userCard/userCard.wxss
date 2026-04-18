@@ -1,0 +1,263 @@
+/* ============================================
+   userCard 组件样式
+   设计风格：柔和玻璃 (Soft Glass)
+   支持白天/黑夜模式自动切换
+   ============================================ */
+
+/* ---------- 用户卡片容器 ---------- */
+.user-card {
+  position: relative;
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1rpx solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+  transition: box-shadow var(--transition-normal), background var(--transition-normal);
+}
+
+/* 顶部渐变装饰线 */
+.user-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 6rpx;
+  background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
+}
+
+.user-card:active {
+  transform: scale(0.98);
+  transition: transform var(--transition-fast);
+}
+
+/* ---------- 用户信息内容区 ---------- */
+.user-card-content {
+  display: flex;
+  align-items: center;
+  padding: var(--space-lg);
+  gap: var(--space-lg);
+}
+
+/* ---------- 头像 ---------- */
+.user-avatar {
+  position: relative;
+  width: 120rpx;
+  height: 120rpx;
+  border-radius: 50%;
+  border: 4rpx solid var(--accent-primary);
+  box-shadow: 0 0 20rpx var(--accent-glow);
+  overflow: hidden;
+  flex-shrink: 0;
+  background: var(--bg-elevated);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.user-avatar image {
+  width: 100%;
+  height: 100%;
+}
+
+.avatar-emoji {
+  font-size: 64rpx;
+  line-height: 1;
+}
+
+/* 等级徽章 */
+.avatar-badge {
+  position: absolute;
+  bottom: -4rpx;
+  right: -4rpx;
+  background: linear-gradient(135deg, #F59E0B, #D97706);
+  border-radius: var(--radius-sm);
+  padding: 2rpx 10rpx;
+  box-shadow: 0 2rpx 8rpx rgba(245, 158, 11, 0.4);
+}
+
+.badge-text {
+  font-size: 20rpx;
+  font-weight: 700;
+  color: #FFFFFF;
+  text-shadow: 0 1rpx 2rpx rgba(0, 0, 0, 0.2);
+}
+
+/* ---------- 用户信息区域 ---------- */
+.user-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+/* 用户名 */
+.user-name {
+  font-size: 32rpx;
+  font-weight: 700;
+  color: var(--text-bright);
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 等级/段位信息 */
+.user-rank {
+  display: inline-flex;
+  align-items: center;
+  background: linear-gradient(135deg, #F59E0B, #D97706);
+  border-radius: var(--radius-sm);
+  padding: 4rpx 12rpx;
+  width: fit-content;
+}
+
+.user-rank-text {
+  font-size: 22rpx;
+  font-weight: 600;
+  color: #FFFFFF;
+  text-shadow: 0 1rpx 2rpx rgba(0, 0, 0, 0.2);
+}
+
+/* 统计信息 */
+.user-stats {
+  display: flex;
+  gap: var(--space-lg);
+  margin-top: var(--space-xs);
+}
+
+.stat-item {
+  display: flex;
+  align-items: center;
+  gap: 6rpx;
+}
+
+.stat-icon {
+  font-size: 24rpx;
+}
+
+.stat-value {
+  font-size: 26rpx;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.stat-label {
+  font-size: 22rpx;
+  color: var(--text-secondary);
+}
+
+/* ---------- 资源信息 ---------- */
+.resources {
+  display: flex;
+  gap: var(--space-lg);
+  margin-top: var(--space-sm);
+}
+
+.resource-item {
+  display: flex;
+  align-items: center;
+  gap: 6rpx;
+}
+
+.resource-icon {
+  font-size: 24rpx;
+}
+
+.resource-value {
+  font-size: 26rpx;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+/* ---------- 登录提示（未登录状态） ---------- */
+.login-prompt {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+  padding-right: var(--space-sm);
+}
+
+.login-text {
+  font-size: 28rpx;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.login-arrow {
+  font-size: 36rpx;
+  color: var(--text-muted);
+  font-weight: 300;
+}
+
+/* ---------- 未登录卡片状态 ---------- */
+.user-card-guest {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-xl);
+  gap: var(--space-md);
+}
+
+.guest-icon {
+  font-size: 80rpx;
+  opacity: 0.6;
+}
+
+.guest-text {
+  font-size: 28rpx;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+.login-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-md) var(--space-xl);
+  background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #FFFFFF;
+  box-shadow: var(--shadow-accent);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.login-btn:active {
+  transform: scale(0.96);
+  opacity: 0.9;
+}
+
+/* ---------- 段位信息条 ---------- */
+.rank-info {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.rank-label {
+  font-size: 24rpx;
+  color: var(--text-muted);
+}
+
+.rank-bar {
+  display: flex;
+  align-items: center;
+  background: var(--bg-glass);
+  border-radius: var(--radius-sm);
+  padding: 4rpx 12rpx;
+}
+
+.rank-value {
+  font-size: 24rpx;
+  font-weight: 600;
+  color: var(--text-primary);
+}
