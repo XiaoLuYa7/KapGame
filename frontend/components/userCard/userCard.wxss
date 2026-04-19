@@ -5,40 +5,34 @@
    ============================================ */
 
 /* ---------- 用户卡片容器 ---------- */
-.user-card {
-  position: relative;
+.user-section {
+  display: flex;
+  align-items: center;
+  padding: var(--space-lg);
   background: var(--glass-bg);
   backdrop-filter: var(--glass-blur);
   -webkit-backdrop-filter: var(--glass-blur);
   border: 1rpx solid var(--glass-border);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-card);
+  position: relative;
   overflow: hidden;
-  transition: box-shadow var(--transition-normal), background var(--transition-normal);
 }
 
 /* 顶部渐变装饰线 */
-.user-card::before {
+.user-section::before {
   content: '';
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
-  height: 6rpx;
+  height: 4rpx;
   background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
 }
 
-.user-card:active {
+.user-section:active {
   transform: scale(0.98);
   transition: transform var(--transition-fast);
-}
-
-/* ---------- 用户信息内容区 ---------- */
-.user-card-content {
-  display: flex;
-  align-items: center;
-  padding: var(--space-lg);
-  gap: var(--space-lg);
 }
 
 /* ---------- 头像 ---------- */
@@ -49,7 +43,7 @@
   border-radius: 50%;
   border: 4rpx solid var(--accent-primary);
   box-shadow: 0 0 20rpx var(--accent-glow);
-  overflow: hidden;
+  overflow: visible;
   flex-shrink: 0;
   background: var(--bg-elevated);
   display: flex;
@@ -60,6 +54,8 @@
 .user-avatar image {
   width: 100%;
   height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
 }
 
 .avatar-emoji {
@@ -89,13 +85,14 @@
 .user-info {
   flex: 1;
   min-width: 0;
+  margin-left: var(--space-lg);
   display: flex;
   flex-direction: column;
   gap: var(--space-xs);
 }
 
 /* 用户名 */
-.user-name {
+.username {
   font-size: 32rpx;
   font-weight: 700;
   color: var(--text-bright);
@@ -105,56 +102,37 @@
   white-space: nowrap;
 }
 
-/* 等级/段位信息 */
-.user-rank {
-  display: inline-flex;
+/* 段位信息 */
+.rank-info {
+  display: flex;
   align-items: center;
-  background: linear-gradient(135deg, #F59E0B, #D97706);
+  gap: var(--space-sm);
+}
+
+.rank-label {
+  font-size: 24rpx;
+  color: var(--text-muted);
+}
+
+.rank-bar {
+  display: flex;
+  align-items: center;
+  background: rgba(var(--accent-primary-rgb), 0.1);
   border-radius: var(--radius-sm);
   padding: 4rpx 12rpx;
-  width: fit-content;
 }
 
-.user-rank-text {
-  font-size: 22rpx;
-  font-weight: 600;
-  color: #FFFFFF;
-  text-shadow: 0 1rpx 2rpx rgba(0, 0, 0, 0.2);
-}
-
-/* 统计信息 */
-.user-stats {
-  display: flex;
-  gap: var(--space-lg);
-  margin-top: var(--space-xs);
-}
-
-.stat-item {
-  display: flex;
-  align-items: center;
-  gap: 6rpx;
-}
-
-.stat-icon {
+.rank-value {
   font-size: 24rpx;
-}
-
-.stat-value {
-  font-size: 26rpx;
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--accent-primary);
 }
 
-.stat-label {
-  font-size: 22rpx;
-  color: var(--text-secondary);
-}
-
-/* ---------- 资源信息 ---------- */
+/* 资源信息 */
 .resources {
   display: flex;
   gap: var(--space-lg);
-  margin-top: var(--space-sm);
+  margin-top: var(--space-xs);
 }
 
 .resource-item {
@@ -178,86 +156,21 @@
   display: flex;
   align-items: center;
   gap: 8rpx;
-  padding-right: var(--space-sm);
+  margin-left: auto;
+  padding: var(--space-sm) var(--space-md);
+  background: var(--glass-bg);
+  border-radius: var(--radius-md);
+  border: 1rpx solid var(--glass-border);
 }
 
 .login-text {
   font-size: 28rpx;
   font-weight: 500;
-  color: var(--text-secondary);
+  color: var(--accent-primary);
 }
 
 .login-arrow {
   font-size: 36rpx;
-  color: var(--text-muted);
+  color: var(--accent-primary);
   font-weight: 300;
-}
-
-/* ---------- 未登录卡片状态 ---------- */
-.user-card-guest {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: var(--space-xl);
-  gap: var(--space-md);
-}
-
-.guest-icon {
-  font-size: 80rpx;
-  opacity: 0.6;
-}
-
-.guest-text {
-  font-size: 28rpx;
-  color: var(--text-secondary);
-  text-align: center;
-}
-
-.login-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: var(--space-md) var(--space-xl);
-  background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
-  border: none;
-  border-radius: var(--radius-md);
-  font-size: 28rpx;
-  font-weight: 600;
-  color: #FFFFFF;
-  box-shadow: var(--shadow-accent);
-  cursor: pointer;
-  transition: all var(--transition-fast);
-  -webkit-tap-highlight-color: transparent;
-}
-
-.login-btn:active {
-  transform: scale(0.96);
-  opacity: 0.9;
-}
-
-/* ---------- 段位信息条 ---------- */
-.rank-info {
-  display: flex;
-  align-items: center;
-  gap: var(--space-sm);
-}
-
-.rank-label {
-  font-size: 24rpx;
-  color: var(--text-muted);
-}
-
-.rank-bar {
-  display: flex;
-  align-items: center;
-  background: var(--bg-glass);
-  border-radius: var(--radius-sm);
-  padding: 4rpx 12rpx;
-}
-
-.rank-value {
-  font-size: 24rpx;
-  font-weight: 600;
-  color: var(--text-primary);
 }
