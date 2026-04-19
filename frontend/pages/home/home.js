@@ -159,13 +159,16 @@ Page({
 
     const app = getApp();
     try {
-      this.setData({
-        'userData.rank': '青铜 III',
-        'userData.diamond': 150,
-        'userData.gold': 2500,
-        'userData.level': 5,
-        'userData.exp': 65
-      });
+      const userData = await app.request('/user/info');
+      if (userData) {
+        this.setData({
+          'userData.rank': userData.rank || '青铜 III',
+          'userData.diamond': userData.diamond || 0,
+          'userData.gold': userData.gold || 0,
+          'userData.level': userData.level || 0,
+          'userData.exp': userData.exp || 0
+        });
+      }
     } catch (err) {
       console.error('加载用户数据失败:', err);
     }

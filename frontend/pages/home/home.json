@@ -1,5 +1,8 @@
 {
-  "navigationBarTitleText": "背锅大作战",
+  "navigationBarTitleText": "对战",
   "enablePullDownRefresh": false,
-  "backgroundColor": "#f5f5f5"
+  "backgroundColor": "#f5f5f5",
+  "usingComponents": {
+    "userCard": "/components/userCard/userCard"
+  }
 }

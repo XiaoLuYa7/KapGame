@@ -1,35 +1,47 @@
-/* pages/chat/chat.wxss */
+/* ============================================
+   聊天页样式
+   设计风格：柔和玻璃 (Soft Glass)
+   支持白天/黑夜模式自动切换
+   ============================================ */
+
+/* ---------- 页面容器 ---------- */
 .chat-container {
   min-height: 100vh;
-  background: linear-gradient(180deg, #f5f7fa 0%, #e4e8f0 100%);
-  padding: 0 30rpx 40rpx;
+  background: transparent;
+  padding: 0 var(--space-lg) var(--space-xl);
   box-sizing: border-box;
-  padding-top: 20rpx;
+  padding-top: var(--space-lg);
+  position: relative;
 }
 
-/* Tab切换 */
+/* ---------- Tab切换 ---------- */
 .tabs {
   display: flex;
-  background: white;
-  border-radius: 16rpx;
-  margin-bottom: 30rpx;
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border-radius: var(--radius-lg);
+  margin-bottom: var(--space-xl);
   padding: 8rpx;
-  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.08);
+  border: 1rpx solid var(--glass-border);
+  position: relative;
+  z-index: 1;
 }
 
 .tab-item {
   flex: 1;
   text-align: center;
-  padding: 24rpx 0;
-  font-size: 32rpx;
-  color: #7f8c8d;
+  padding: var(--space-md) 0;
+  font-size: 30rpx;
+  color: var(--text-muted);
   position: relative;
-  transition: all 0.3s;
+  transition: all var(--transition-normal);
+  font-weight: 500;
 }
 
 .tab-item.active {
-  color: #3498db;
-  font-weight: bold;
+  color: var(--accent-primary);
+  font-weight: 600;
 }
 
 .tab-indicator {
@@ -37,55 +49,64 @@
   bottom: 0;
   left: 50%;
   transform: translateX(-50%);
-  width: 60rpx;
-  height: 6rpx;
-  background: #3498db;
+  width: 48rpx;
+  height: 5rpx;
+  background: linear-gradient(90deg, var(--accent-primary) 0%, var(--accent-bright) 100%);
   border-radius: 3rpx;
   opacity: 0;
-  transition: all 0.3s;
+  transition: all var(--transition-normal);
+  box-shadow: 0 0 15rpx var(--accent-glow);
 }
 
 .tab-item.active .tab-indicator {
   opacity: 1;
 }
 
-/* 消息列表 */
+/* ---------- 消息列表 ---------- */
 .messages-list {
-  height: calc(100vh - 300rpx);
+  height: calc(100vh - 320rpx);
+  position: relative;
+  z-index: 1;
 }
 
 .message-item {
   display: flex;
   align-items: center;
-  background: white;
-  border-radius: 20rpx;
-  padding: 30rpx;
-  margin-bottom: 24rpx;
-  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.08);
-  transition: transform 0.2s;
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  margin-bottom: var(--space-md);
+  border: 1rpx solid var(--glass-border);
+  transition: all var(--transition-fast);
 }
 
 .message-item:active {
   transform: scale(0.98);
+  border-color: var(--accent-primary);
+  box-shadow: var(--shadow-elevated);
 }
 
 .message-avatar {
   position: relative;
-  margin-right: 24rpx;
+  margin-right: var(--space-lg);
+  flex-shrink: 0;
 }
 
 .message-avatar image {
-  width: 100rpx;
-  height: 100rpx;
+  width: 96rpx;
+  height: 96rpx;
   border-radius: 50%;
-  background-color: #f0f0f0;
+  background: var(--bg-elevated);
+  border: 3rpx solid var(--border-default);
 }
 
 .message-badge {
   position: absolute;
   top: -8rpx;
   right: -8rpx;
-  background: #e74c3c;
+  background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-dim) 100%);
   color: white;
   font-size: 22rpx;
   min-width: 36rpx;
@@ -94,34 +115,37 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: bold;
+  font-weight: 700;
+  border: 4rpx solid var(--bg-base);
+  box-shadow: 0 0 15rpx var(--accent-glow);
 }
 
 .message-content {
   flex: 1;
+  min-width: 0;
 }
 
 .message-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12rpx;
+  margin-bottom: var(--space-sm);
 }
 
 .message-name {
-  font-size: 34rpx;
-  font-weight: bold;
-  color: #2c3e50;
+  font-size: 32rpx;
+  font-weight: 600;
+  color: var(--text-primary);
 }
 
 .message-time {
-  font-size: 26rpx;
-  color: #95a5a6;
+  font-size: 24rpx;
+  color: var(--text-muted);
 }
 
 .message-preview {
-  font-size: 28rpx;
-  color: #7f8c8d;
+  font-size: 26rpx;
+  color: var(--text-secondary);
   overflow: hidden;
   text-overflow: ellipsis;
   display: -webkit-box;
@@ -130,241 +154,164 @@
 }
 
 .message-arrow {
-  font-size: 50rpx;
-  color: #bdc3c7;
-  font-weight: bold;
-  margin-left: 20rpx;
+  font-size: 28rpx;
+  color: var(--text-muted);
+  margin-left: var(--space-md);
 }
 
-/* 好友列表 */
+/* ---------- 搜索框 ---------- */
 .search-box {
   display: flex;
   align-items: center;
-  gap: 20rpx;
-  margin-bottom: 30rpx;
+  gap: var(--space-md);
+  margin-bottom: var(--space-xl);
+  position: relative;
+  z-index: 1;
 }
 
 .search-input-wrapper {
   flex: 1;
   position: relative;
-  background: white;
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
   border-radius: 40rpx;
-  padding: 0 30rpx;
+  padding: 0 var(--space-lg);
   height: 80rpx;
   display: flex;
   align-items: center;
-  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.08);
+  border: 1rpx solid var(--glass-border);
+  transition: all var(--transition-fast);
+}
+
+.search-input-wrapper:focus-within {
+  border-color: var(--accent-primary);
+  box-shadow: var(--shadow-accent);
 }
 
 .search-icon {
-  font-size: 36rpx;
-  color: #95a5a6;
-  margin-right: 16rpx;
+  font-size: 34rpx;
+  color: var(--text-muted);
+  margin-right: var(--space-sm);
 }
 
 .search-input {
   flex: 1;
   height: 100%;
-  font-size: 30rpx;
-  color: #2c3e50;
+  font-size: 28rpx;
+  color: var(--text-primary);
 }
 
-.search-clear {
-  font-size: 40rpx;
-  color: #95a5a6;
-  padding: 10rpx;
+.search-input::placeholder {
+  color: var(--text-muted);
 }
 
 .search-add-btn {
   width: 80rpx;
   height: 80rpx;
-  background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+  background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-dim) 100%);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 6rpx 20rpx rgba(52, 152, 219, 0.3);
-  transition: transform 0.2s;
+  box-shadow: var(--shadow-accent);
+  transition: all var(--transition-fast);
 }
 
 .search-add-btn:active {
   transform: scale(0.95);
+  box-shadow: none;
 }
 
-.add-icon {
-  color: white;
-  font-size: 40rpx;
-  font-weight: bold;
-}
-
-/* 好友列表 */
+/* ---------- 好友列表 ---------- */
 .friends-list {
-  height: calc(100vh - 400rpx);
+  height: calc(100vh - 420rpx);
+  position: relative;
+  z-index: 1;
 }
 
 .friend-item {
   display: flex;
   align-items: center;
-  background: white;
-  border-radius: 20rpx;
-  padding: 30rpx;
-  margin-bottom: 24rpx;
-  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.08);
-  transition: transform 0.2s;
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  margin-bottom: var(--space-md);
+  border: 1rpx solid var(--glass-border);
+  transition: all var(--transition-fast);
 }
 
 .friend-item:active {
   transform: scale(0.98);
+  border-color: var(--accent-primary);
+  box-shadow: var(--shadow-elevated);
 }
 
 .friend-avatar {
   position: relative;
-  margin-right: 24rpx;
+  margin-right: var(--space-lg);
+  flex-shrink: 0;
 }
 
 .friend-avatar image {
-  width: 100rpx;
-  height: 100rpx;
+  width: 96rpx;
+  height: 96rpx;
   border-radius: 50%;
-  background-color: #f0f0f0;
-}
-
-.friend-status {
-  position: absolute;
-  bottom: 0;
-  right: 0;
-  width: 24rpx;
-  height: 24rpx;
-  border-radius: 50%;
-  border: 4rpx solid white;
-}
-
-.friend-status.online {
-  background-color: #2ecc71;
-}
-
-.friend-status.offline {
-  background-color: #95a5a6;
+  background: var(--bg-elevated);
+  border: 3rpx solid var(--border-default);
 }
 
 .friend-info {
   flex: 1;
-}
-
-.friend-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 12rpx;
+  min-width: 0;
 }
 
 .friend-name {
-  font-size: 34rpx;
-  font-weight: bold;
-  color: #2c3e50;
+  font-size: 32rpx;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: var(--space-xs);
 }
 
-.friend-rank {
-  font-size: 26rpx;
-  color: #f39c12;
-  font-weight: bold;
-  background: #fef9e7;
-  padding: 6rpx 16rpx;
-  border-radius: 20rpx;
-}
-
-.friend-footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.friend-status-text {
-  font-size: 26rpx;
-  padding: 4rpx 12rpx;
-  border-radius: 20rpx;
-  font-weight: bold;
-}
-
-.friend-status-text.online {
-  color: #27ae60;
-  background: #e8f8f5;
-}
-
-.friend-status-text.offline {
-  color: #7f8c8d;
-  background: #f8f9fa;
-}
-
-.friend-last-online {
-  font-size: 26rpx;
-  color: #95a5a6;
-}
-
-.friend-action {
-  margin-left: 20rpx;
+.friend-status {
+  font-size: 24rpx;
+  color: var(--text-muted);
 }
 
 .chat-btn {
-  background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+  background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-dim) 100%);
   color: white;
   font-size: 26rpx;
-  padding: 12rpx 24rpx;
-  border-radius: 20rpx;
-  font-weight: bold;
-  box-shadow: 0 4rpx 10rpx rgba(52, 152, 219, 0.3);
-  transition: transform 0.2s;
+  font-weight: 600;
+  padding: 14rpx 28rpx;
+  border-radius: 24rpx;
+  box-shadow: var(--shadow-accent);
+  transition: all var(--transition-fast);
 }
 
 .chat-btn:active {
   transform: scale(0.95);
+  box-shadow: none;
 }
 
-/* 空状态 */
+/* ---------- 空状态 ---------- */
 .empty-state {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 100rpx 0;
+  padding: var(--space-2xl) 0;
 }
 
 .empty-icon {
-  font-size: 100rpx;
-  margin-bottom: 30rpx;
-  opacity: 0.5;
+  font-size: 96rpx;
+  margin-bottom: var(--space-lg);
+  opacity: 0.4;
 }
 
 .empty-text {
-  font-size: 32rpx;
-  color: #95a5a6;
-}
-
-/* 刷新按钮 */
-.refresh-btn {
-  position: fixed;
-  right: 40rpx;
-  bottom: 40rpx;
-  background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
-  color: white;
-  padding: 20rpx 30rpx;
-  border-radius: 40rpx;
-  display: flex;
-  align-items: center;
-  box-shadow: 0 8rpx 30rpx rgba(44, 62, 80, 0.3);
-  transition: transform 0.2s;
-}
-
-.refresh-btn:active {
-  transform: scale(0.95);
-}
-
-.refresh-icon {
-  font-size: 36rpx;
-  margin-right: 12rpx;
-}
-
-.refresh-text {
-  font-size: 28rpx;
-  font-weight: bold;
+  font-size: 30rpx;
+  color: var(--text-muted);
 }
