@@ -26,6 +26,12 @@ public class FriendRelation {
     @Column(length = 20)
     private String status = "PENDING"; // PENDING, ACCEPTED, BLOCKED
 
+    @Column(name = "last_chat_time")
+    private LocalDateTime lastChatTime; // 最后聊天时间
+
+    @Column(length = 100)
+    private String remark; // 好友备注
+
     @Column(name = "create_time")
     private LocalDateTime createTime;
 

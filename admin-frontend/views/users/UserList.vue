@@ -62,6 +62,25 @@
             </el-tag>
           </template>
         </el-table-column>
+        <el-table-column prop="onlineStatus" label="在线状态" width="100">
+          <template #default="{ row }">
+            <el-tag :type="row.onlineStatus === 'ONLINE' ? 'success' : 'info'" size="small">
+              {{ row.onlineStatus === 'ONLINE' ? '在线' : '离线' }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="isVerified" label="实名" width="80">
+          <template #default="{ row }">
+            <el-tag :type="row.isVerified ? 'success' : 'warning'" size="small">
+              {{ row.isVerified ? '已认证' : '未认证' }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="lastActiveTime" label="最后活跃" width="140">
+          <template #default="{ row }">
+            {{ formatDate(row.lastActiveTime) }}
+          </template>
+        </el-table-column>
         <el-table-column v-if="hasAnyAction" label="操作" width="260" fixed="right">
           <template #default="{ row }">
             <div class="action-buttons">
@@ -131,6 +150,19 @@ const searchKeyword = ref('')
 const currentUser = ref(null)
 const detailVisible = ref(false)
 const editVisible = ref(false)
+
+const formatDate = (date) => {
+  if (!date) return '-'
+  const d = new Date(date)
+  const now = new Date()
+  const diff = now - d
+  const minutes = Math.floor(diff / 60000)
+  const hours = Math.floor(minutes / 60)
+  if (minutes < 1) return '刚刚'
+  if (minutes < 60) return `${minutes}分钟前`
+  if (hours < 24) return `${hours}小时前`
+  return d.toLocaleDateString()
+}
 
 const pagination = reactive({
   page: 1,

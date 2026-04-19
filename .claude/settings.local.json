@@ -66,7 +66,20 @@
       "Bash(node -e \"import\\(''./router/index.js'', { assert: { type: ''module'' } }\\).then\\(m => console.log\\(''Router imports OK''\\)\\).catch\\(e => console.error\\(''Router import error:'', e.message\\)\\)\")",
       "Bash(grep -r /apis D:/ClaudeCode/KapGame/admin-frontend/ --include=*.js --include=*.vue --include=*.html)",
       "Bash(grep:*)",
-      "Bash(find D:/ClaudeCode/KapGame/backend -name application*.yml -o -name application*.properties)"
+      "Bash(find D:/ClaudeCode/KapGame/backend -name application*.yml -o -name application*.properties)",
+      "Bash(convert -size 81x81 xc:none -fill \"#999999\" -draw \"circle 40,40 40,10\" shop.png)",
+      "Bash(convert -size 81x81 xc:none -fill \"#e94560\" -draw \"circle 40,40 40,10\" shop-active.png)",
+      "Bash(convert -size 81x81 xc:none -fill \"#999999\" -draw \"circle 40,40 40,10\" battle.png)",
+      "Bash(convert -size 81x81 xc:none -fill \"#e94560\" -draw \"circle 40,40 40,10\" battle-active.png)",
+      "Bash(convert -size 81x81 xc:none -fill \"#999999\" -draw \"circle 40,40 40,10\" messages.png)",
+      "Bash(python:*)",
+      "Bash(python3:*)",
+      "Bash(node:*)",
+      "Bash(pip show:*)",
+      "Bash(pip install:*)",
+      "mcp__plugin_claude-mem_mcp-search__search",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
     ]
   },
   "enabledPlugins": {

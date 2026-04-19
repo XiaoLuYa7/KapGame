@@ -78,6 +78,37 @@ public class User {
     @Column(name = "total_online_time")
     private Integer totalOnlineTime = 0; // 单位：分钟
 
+    // ===== 新增字段：设置相关 =====
+    @Column(name = "sound_effects_enabled")
+    private Boolean soundEffectsEnabled = true; // 音效开关
+
+    @Column(name = "music_enabled")
+    private Boolean musicEnabled = true; // 音乐开关
+
+    @Column(name = "vibration_enabled")
+    private Boolean vibrationEnabled = true; // 震动开关
+
+    @Column(name = "show_online_status")
+    private Boolean showOnlineStatus = true; // 在好友列表显示在线状态
+
+    @Column(name = "show_last_active_time")
+    private Boolean showLastActiveTime = true; // 显示最后活跃时间
+
+    @Column(name = "real_name", length = 50)
+    private String realName; // 实名认证的真实姓名
+
+    @Column(name = "id_card", length = 20)
+    private String idCard; // 身份证号
+
+    @Column(name = "is_verified")
+    private Boolean isVerified = false; // 是否已实名认证
+
+    @Column(name = "last_active_time")
+    private LocalDateTime lastActiveTime; // 最后活跃时间
+
+    @Column(name = "online_status", length = 20)
+    private String onlineStatus = "OFFLINE"; // ONLINE, OFFLINE
+
     @Column(name = "update_time")
     private LocalDateTime updateTime;
 
@@ -100,6 +131,13 @@ public class User {
         if (winGames == null) winGames = 0;
         if (friendCount == null) friendCount = 0;
         if (totalOnlineTime == null) totalOnlineTime = 0;
+        if (soundEffectsEnabled == null) soundEffectsEnabled = true;
+        if (musicEnabled == null) musicEnabled = true;
+        if (vibrationEnabled == null) vibrationEnabled = true;
+        if (showOnlineStatus == null) showOnlineStatus = true;
+        if (showLastActiveTime == null) showLastActiveTime = true;
+        if (isVerified == null) isVerified = false;
+        if (onlineStatus == null) onlineStatus = "OFFLINE";
     }
 
     @PreUpdate

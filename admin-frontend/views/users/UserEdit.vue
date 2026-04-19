@@ -24,6 +24,27 @@
       <el-form-item label="金币">
         <el-input-number v-model="form.gold" :min="0" />
       </el-form-item>
+      <el-form-item label="音效开关">
+        <el-switch v-model="form.soundEffectsEnabled" />
+      </el-form-item>
+      <el-form-item label="音乐开关">
+        <el-switch v-model="form.musicEnabled" />
+      </el-form-item>
+      <el-form-item label="震动开关">
+        <el-switch v-model="form.vibrationEnabled" />
+      </el-form-item>
+      <el-form-item label="显示在线">
+        <el-switch v-model="form.showOnlineStatus" />
+      </el-form-item>
+      <el-form-item label="显示活跃">
+        <el-switch v-model="form.showLastActiveTime" />
+      </el-form-item>
+      <el-form-item label="实名认证">
+        <el-switch v-model="form.isVerified" />
+      </el-form-item>
+      <el-form-item label="真实姓名">
+        <el-input v-model="form.realName" placeholder="请输入真实姓名" />
+      </el-form-item>
     </el-form>
 
     <template #footer>
@@ -62,7 +83,14 @@ const form = reactive({
   rank: '',
   exp: 0,
   diamond: 0,
-  gold: 0
+  gold: 0,
+  soundEffectsEnabled: true,
+  musicEnabled: true,
+  vibrationEnabled: true,
+  showOnlineStatus: true,
+  showLastActiveTime: true,
+  isVerified: false,
+  realName: ''
 })
 
 watch(
@@ -75,6 +103,13 @@ watch(
       form.exp = newUser.exp || 0
       form.diamond = newUser.diamond || 0
       form.gold = newUser.gold || 0
+      form.soundEffectsEnabled = newUser.soundEffectsEnabled !== false
+      form.musicEnabled = newUser.musicEnabled !== false
+      form.vibrationEnabled = newUser.vibrationEnabled !== false
+      form.showOnlineStatus = newUser.showOnlineStatus !== false
+      form.showLastActiveTime = newUser.showLastActiveTime !== false
+      form.isVerified = newUser.isVerified || false
+      form.realName = newUser.realName || ''
     }
   },
   { immediate: true }

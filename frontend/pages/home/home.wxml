@@ -1,39 +1,12 @@
 <!-- pages/home/home.wxml -->
 <view class="home-container">
-  <!-- 顶部用户信息 -->
-  <view class="user-section" bindtap="handleLogin">
-    <view class="user-avatar">
-      <image wx:if="{{userData.avatarUrl && userData.avatarUrl.startsWith('http')}}" src="{{userData.avatarUrl}}" mode="aspectFill"></image>
-      <text wx:else class="avatar-emoji">👤</text>
-      <view class="avatar-badge" wx:if="{{userData.level > 0}}">Lv.{{userData.level}}</view>
-    </view>
-    <view class="user-info">
-      <view class="username">{{userData.username || '点击登录'}}</view>
-      <view class="rank-info">
-        <text class="rank-label">段位：</text>
-        <text class="rank-value">{{userData.rank}}</text>
-      </view>
-      <view class="resources">
-        <view class="resource-item">
-          <text class="resource-icon">💎</text>
-          <text class="resource-value">{{userData.diamond}}</text>
-        </view>
-        <view class="resource-item">
-          <text class="resource-icon">💰</text>
-          <text class="resource-value">{{userData.gold}}</text>
-        </view>
-      </view>
-    </view>
-    <view class="login-prompt" wx:if="{{!isLoggedIn}}">
-      <text class="login-text">点击登录</text>
-      <text class="login-arrow">›</text>
-    </view>
-  </view>
+  <!-- 顶部用户信息（使用公共组件） -->
+  <userCard userData="{{userData}}" isLoggedIn="{{isLoggedIn}}" />
 
   <!-- 活动信息 -->
   <view class="section-title">
     <text class="title-text">热门活动</text>
-    <text class="title-more" wx:if="{{activities.length > 0}}">查看全部</text>
+    <text class="title-more" wx:if="{{activities.length > 0}}">查看全部 ›</text>
   </view>
   <scroll-view class="activities-scroll" scroll-x="true" wx:if="{{activities.length > 0}}">
     <view class="activities-list">
@@ -67,9 +40,9 @@
     <text class="title-text">玩法模式</text>
   </view>
   <view class="game-modes">
-    <view wx:for="{{gameModes}}" wx:key="id" class="game-mode-item" data-route="{{item.route}}" bindtap="handleGameModeTap" style="background-color: {{item.bgColor}}; border-left: 6px solid {{item.color}};">
-      <view class="game-mode-icon" style="color: {{item.color}};">
-        <text class="iconfont icon-{{item.icon}}"></text>
+    <view wx:for="{{gameModes}}" wx:key="id" class="game-mode-item" data-route="{{item.route}}" bindtap="handleGameModeTap">
+      <view class="game-mode-icon">
+        <text>{{item.icon === 'trophy' ? '🏆' : item.icon === 'users' ? '👥' : item.icon === 'flag' ? '🏁' : '🎯'}}</text>
       </view>
       <view class="game-mode-content">
         <view class="game-mode-title">{{item.title}}</view>
@@ -85,8 +58,8 @@
   </view>
   <view class="function-grid">
     <view wx:for="{{functions}}" wx:key="id" class="function-item" data-route="{{item.route}}" bindtap="handleFunctionTap">
-      <view class="function-icon" style="color: {{item.color}};">
-        <text class="iconfont icon-{{item.icon}}"></text>
+      <view class="function-icon">
+        <text>{{item.icon === 'gift' ? '🎁' : item.icon === 'diamond' ? '💎' : item.icon === 'smile' ? '😊' : item.icon === 'bar-chart' ? '📊' : '📋'}}</text>
       </view>
       <view class="function-title">{{item.title}}</view>
     </view>
@@ -94,6 +67,6 @@
 
   <!-- 底部提示 -->
   <view class="footer-tip">
-    <text>背锅大作战 - 策略卡牌游戏</text>
+    <text>时序裂隙 - 策略卡牌对战</text>
   </view>
 </view>
