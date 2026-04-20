@@ -1,5 +1,8 @@
 <!-- pages/login/login.wxml -->
 <view class="login-container">
+  <!-- 背景图片 -->
+  <image class="page-bg" src="images/bg.png" mode="aspectFill" />
+
   <!-- Logo区域 -->
   <view class="login-logo">
     <text class="logo-icon">🎴</text>

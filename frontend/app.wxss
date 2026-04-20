@@ -126,10 +126,6 @@ page {
 /* ---------- 全局重置 ---------- */
 page {
   background: var(--bg-base);
-  background-image: url('./images/bg.png');
-  background-size: 750rpx auto;
-  background-position: top center;
-  background-repeat: no-repeat;
   font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'PingFang SC', sans-serif;
   color: var(--text-primary);
   font-size: 28rpx;

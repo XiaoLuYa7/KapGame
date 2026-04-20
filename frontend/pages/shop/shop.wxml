@@ -1,4 +1,7 @@
 <view class="shop-container">
+  <!-- 背景图片 -->
+  <image class="page-bg" src="images/bg.png" mode="aspectFill" />
+
   <!-- 顶部用户信息（使用公共组件） -->
   <userCard userData="{{userData}}" isLoggedIn="{{isLoggedIn}}" />
 
