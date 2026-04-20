@@ -1,5 +1,8 @@
 <!-- pages/chat/chat.wxml -->
 <view class="chat-container">
+  <!-- 背景图片 -->
+  <image class="page-bg" src="images/bg.png" mode="aspectFill" />
+
   <!-- Tab切换 -->
   <view class="tabs">
     <view

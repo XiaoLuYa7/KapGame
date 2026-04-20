@@ -16,6 +16,17 @@
   overflow: hidden;
 }
 
+/* ---------- 背景图片 ---------- */
+.page-bg {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 750rpx;
+  height: 100vh;
+  z-index: 0;
+  pointer-events: none;
+}
+
 /* ---------- Logo区域 ---------- */
 .login-logo {
   display: flex;
