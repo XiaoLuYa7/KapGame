@@ -25,6 +25,9 @@ public interface UserService {
 
     // 业务特定方法
     User updateProfile(Long id, String nickname, String avatar);
+    User bindPhone(String phone, String code);
+    User verifyRealName(String realName, String idCard);
+    User updateUserSettings(Boolean soundEffectsEnabled, Boolean musicEnabled, Boolean vibrationEnabled);
     User updatePassword(Long id, String oldPassword, String newPassword);
     User resetPassword(Long id, String newPassword);
     User updateStatus(Long id, String status);
