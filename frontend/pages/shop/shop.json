@@ -1,6 +1,0 @@
-{
-  "usingComponents": {
-    "userCard": "/components/userCard/userCard"
-  },
-  "navigationBarTitleText": "商城"
-}

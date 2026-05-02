@@ -1,0 +1,25 @@
+CocosFrontend/.venv-image/
+
+# Local tools / npm global
+.tools/
+npm-global/
+node_modules/
+
+# Cocos generated
+CocosFrontend/temp/
+CocosFrontend/library/
+CocosFrontend/local/
+CocosFrontend/build/
+
+# Python virtual env
+.venv/
+venv/
+env/
+.venv-image/
+CocosFrontend/.venv-image/
+
+# Java / Maven
+target/
+
+# Frontend build
+dist/

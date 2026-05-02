@@ -304,6 +304,64 @@ public class UserServiceImpl implements UserService, UserDetailsService {
 
     @Override
     @Transactional
+    public User bindPhone(String phone, String code) {
+        if (phone == null || !phone.matches("^1[3-9]\\d{9}$")) {
+            throw new RuntimeException("手机号格式不正确");
+        }
+        if (code == null || !code.matches("^\\d{6}$")) {
+            throw new RuntimeException("验证码格式不正确");
+        }
+
+        User currentUser = getCurrentUser();
+        userRepository.findByPhone(phone)
+                .filter(user -> !user.getId().equals(currentUser.getId()))
+                .ifPresent(user -> {
+                    throw new RuntimeException("手机号已被绑定");
+                });
+
+        // TODO 接入短信服务后，在这里校验验证码。当前开发阶段只校验格式。
+        currentUser.setPhone(phone);
+        currentUser.setUpdateTime(LocalDateTime.now());
+        return userRepository.save(currentUser);
+    }
+
+    @Override
+    @Transactional
+    public User verifyRealName(String realName, String idCard) {
+        if (realName == null || realName.trim().isEmpty()) {
+            throw new RuntimeException("真实姓名不能为空");
+        }
+        if (idCard == null || !idCard.matches("^[1-9]\\d{5}(18|19|20)\\d{2}(0[1-9]|1[0-2])(0[1-9]|[12]\\d|3[01])\\d{3}[0-9Xx]$")) {
+            throw new RuntimeException("身份证号格式不正确");
+        }
+
+        User currentUser = getCurrentUser();
+        currentUser.setRealName(realName.trim());
+        currentUser.setIdCard(idCard.trim().toUpperCase());
+        currentUser.setIsVerified(true);
+        currentUser.setUpdateTime(LocalDateTime.now());
+        return userRepository.save(currentUser);
+    }
+
+    @Override
+    @Transactional
+    public User updateUserSettings(Boolean soundEffectsEnabled, Boolean musicEnabled, Boolean vibrationEnabled) {
+        User currentUser = getCurrentUser();
+        if (soundEffectsEnabled != null) {
+            currentUser.setSoundEffectsEnabled(soundEffectsEnabled);
+        }
+        if (musicEnabled != null) {
+            currentUser.setMusicEnabled(musicEnabled);
+        }
+        if (vibrationEnabled != null) {
+            currentUser.setVibrationEnabled(vibrationEnabled);
+        }
+        currentUser.setUpdateTime(LocalDateTime.now());
+        return userRepository.save(currentUser);
+    }
+
+    @Override
+    @Transactional
     public User updatePassword(Long id, String oldPassword, String newPassword) {
         User user = getUserById(id);
 

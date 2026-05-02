@@ -1,0 +1,5 @@
+com/beiguo/controller/UserController.class
+com/beiguo/entity/Message.class
+com/beiguo/controller/UserController$BindPhoneRequest.class
+com/beiguo/controller/UserController$RealNameRequest.class
+com/beiguo/controller/UserController$UserSettingsRequest.class
