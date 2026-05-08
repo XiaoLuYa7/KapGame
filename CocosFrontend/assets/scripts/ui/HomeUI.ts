@@ -16,6 +16,14 @@ export class HomeUI extends HomeView {
         this.findGameView()?.onLevelRewardButtonClick();
     }
 
+    onDailyCheckInButtonClick() {
+        this.findGameView()?.onDailyCheckInButtonClick();
+    }
+
+    onRankButtonClick() {
+        this.findGameView()?.onRankButtonClick();
+    }
+
     onSettingsCloseButtonClick(event?: any) {
         this.findSettingsPopupRoot()?.onSettingsCloseButtonClick(event);
     }
