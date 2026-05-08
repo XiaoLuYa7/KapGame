@@ -1,4 +1,4 @@
-import { _decorator, Label, Node, Sprite } from 'cc';
+import { _decorator, Label, Node, resources, Sprite, SpriteFrame, UITransform } from 'cc';
 import { BaseUI, SceneData } from './BaseUI';
 import { SceneManager, SceneName } from '../core/SceneManager';
 import { dataManager } from '../core/DataManager';
@@ -12,6 +12,18 @@ type HomeTabName = 'Game' | 'Chat';
 @ccclass('HomeView')
 export class HomeView extends BaseUI {
     static sceneName: string = SceneName.Home;
+    private readonly startupPopupNames = [
+        'SettingsPopupLayer',
+        'PrivacyPolicyLayer',
+        'UserAgreementLayer',
+        'BindPhoneLayer',
+        'RealNameLayer',
+        'LevelRewardPopupLayer',
+        'BountyTaskPopupLayer',
+        'ChangeTaskPopupLayer',
+        'DailyCheckInPopupLayer',
+        'LastWeekRankingPopupLayer'
+    ];
 
     @property(Label)
     usernameLabel: Label | null = null;
@@ -21,6 +33,12 @@ export class HomeView extends BaseUI {
 
     @property(Label)
     rankLabel: Label | null = null;
+
+    @property(Sprite)
+    rankButtonIcon: Sprite | null = null;
+
+    @property(Label)
+    rankButtonLabel: Label | null = null;
 
     @property(Label)
     diamondLabel: Label | null = null;
@@ -66,6 +84,7 @@ export class HomeView extends BaseUI {
         this.currentTab = this.normalizeTabName(data?.tab) || this.currentTab || this.defaultTab;
 
         this.resolveNodes();
+        this.hideStartupPopups();
         this.ensureChildViewComponents();
         await this.setActiveTab(this.currentTab, true);
         this.updateUserInfo();
@@ -120,6 +139,10 @@ export class HomeView extends BaseUI {
         if (this.rankLabel) {
             this.rankLabel.string = userData.rank || '';
         }
+        if (this.rankButtonLabel) {
+            this.rankButtonLabel.string = userData.rankName || userData.rank || '';
+        }
+        this.setResourceSprite(this.rankButtonIcon, userData.rankIcon);
         if (this.diamondLabel) {
             this.diamondLabel.string = String(userData.diamond ?? 0);
         }
@@ -148,12 +171,27 @@ export class HomeView extends BaseUI {
             'HeaderContainer/UserInfoPanel/RankLabel',
             'RankLabel'
         ], Label);
+        this.rankButtonIcon ??= this.findComponentByPaths([
+            'HeaderContainer/UserResPanel/RankButton/RankIcon',
+            'HeaderContainer/UserResPanel/UserInfoPanel/RankButton/RankIcon',
+            'HeaderContainer/RankButton/RankIcon',
+            'RankButton/RankIcon'
+        ], Sprite);
+        this.rankButtonLabel ??= this.findComponentByPaths([
+            'HeaderContainer/UserResPanel/RankButton/RankLabel',
+            'HeaderContainer/UserResPanel/UserInfoPanel/RankButton/RankLabel',
+            'HeaderContainer/RankButton/RankLabel',
+            'RankButton/RankLabel'
+        ], Label);
         this.diamondLabel ??= this.findComponentByPaths([
             'HeaderContainer/UserResPanel/ResourcesPanel/DiamondPanel/DiamondLabel',
             'HeaderContainer/ResourcesPanel/DiamondPanel/DiamondLabel',
             'DiamondLabel'
         ], Label);
         this.goldLabel ??= this.findComponentByPaths([
+            'HeaderContainer/UserResPanel/ResourcesPanel/GoldPanel/GoldLabel',
+            'HeaderContainer/ResourcesPanel/GoldPanel/GoldLabel',
+            'GoldPanel/GoldLabel',
             'HeaderContainer/UserResPanel/ResourcesPanel/GoldPanel/DiamondLabel',
             'HeaderContainer/ResourcesPanel/GoldPanel/DiamondLabel',
             'GoldPanel/DiamondLabel'
@@ -195,5 +233,58 @@ export class HomeView extends BaseUI {
 
     private normalizeTabName(tabName: any): HomeTabName | null {
         return tabName === 'Chat' ? 'Chat' : tabName === 'Game' || tabName === 'Home' || tabName === 'Battle' ? 'Game' : null;
+    }
+
+    private hideStartupPopups() {
+        const canvas = this.getHomeCanvasNode();
+        for (const popupName of this.startupPopupNames) {
+            const popupNode = this.findNodeByPaths([popupName], canvas);
+            if (popupNode?.isValid) {
+                popupNode.active = false;
+            }
+        }
+    }
+
+    private getHomeCanvasNode(): Node | null {
+        let current: Node | null = this.node;
+        while (current?.parent) {
+            if (current.parent.name === 'Canvas') {
+                return current.parent;
+            }
+            current = current.parent;
+        }
+
+        return this.node;
+    }
+
+    private setResourceSprite(sprite: Sprite | null | undefined, path: string) {
+        if (!sprite || !path) {
+            return;
+        }
+
+        const transform = sprite.getComponent(UITransform);
+        const width = transform?.width ?? 0;
+        const height = transform?.height ?? 0;
+
+        resources.load(this.toSpriteFramePath(path), SpriteFrame, (error, frame) => {
+            if (error || !frame || !sprite.isValid) {
+                return;
+            }
+
+            sprite.sizeMode = Sprite.SizeMode.CUSTOM;
+            sprite.spriteFrame = frame;
+            if (transform?.isValid && width > 0 && height > 0) {
+                transform.setContentSize(width, height);
+            }
+        });
+    }
+
+    private toSpriteFramePath(path: string) {
+        const cleanPath = path
+            .replace(/^resources\//, '')
+            .replace(/\.(png|jpg|jpeg|webp)$/i, '')
+            .replace(/\/spriteFrame$/, '')
+            .replace(/^\/|\/$/g, '');
+        return `${cleanPath}/spriteFrame`;
     }
 }

@@ -1,10 +1,11 @@
-import { _decorator, director, Node } from 'cc';
+import { _decorator, Button, director, Node } from 'cc';
 import { BaseUI } from './BaseUI';
 import { Platform } from '../utils/Platform';
 import { Http } from '../network/Http';
 import { Activity, dataManager, FunctionItem, GameMode } from '../core/DataManager';
 import { SettingsPopupRoot } from './SettingsPopupRoot';
 import { ActivityPopupRoot } from './ActivityPopupRoot';
+import { LastWeekRankingPopupLayer } from './LastWeekRankingPopupLayer';
 
 const { ccclass, property } = _decorator;
 
@@ -16,8 +17,15 @@ export class GameView extends BaseUI {
     @property(Node)
     activityPopupRootNode: Node | null = null;
 
+    @property(Node)
+    lastWeekRankingPopupLayerNode: Node | null = null;
+
+    @property(Node)
+    rankButtonNode: Node | null = null;
+
     onEnter() {
         this.resolveNodes();
+        this.bindRankButtonEvent();
         this.loadActivities();
     }
 
@@ -60,6 +68,10 @@ export class GameView extends BaseUI {
 
     onActivityClick(activity: Activity) {
         console.log('[GameView] Activity clicked:', activity);
+        if (activity.activityType === 'SIGNIN') {
+            void this.getActivityPopupRoot()?.showDailyCheckInPopup();
+            return;
+        }
         Platform.showToast('Activity detail is in development', 'none');
     }
 
@@ -78,6 +90,25 @@ export class GameView extends BaseUI {
         void this.getActivityPopupRoot()?.showLevelRewardPopup();
     }
 
+    onBountyTaskButtonClick() {
+        console.log('[GameView] onBountyTaskButtonClick');
+        void this.getActivityPopupRoot()?.showBountyTaskPopup();
+    }
+
+    onDailyCheckInButtonClick() {
+        console.log('[GameView] onDailyCheckInButtonClick');
+        void this.getActivityPopupRoot()?.showDailyCheckInPopup();
+    }
+
+    onRankButtonClick() {
+        this.openLastWeekRankingPopup();
+    }
+
+    openLastWeekRankingPopup() {
+        console.log('[GameView] openLastWeekRankingPopup');
+        void this.getLastWeekRankingPopupLayer()?.open();
+    }
+
     private updateActivitiesUI(activities: Activity[]) {
         console.log('[GameView] Activities:', activities);
     }
@@ -90,6 +121,15 @@ export class GameView extends BaseUI {
         ], canvas);
         this.activityPopupRootNode ??= this.findNodeByPaths([
             'ActivityPopupRoot'
+        ], canvas);
+        this.lastWeekRankingPopupLayerNode ??= this.findNodeByPaths([
+            'ActivityPopupRoot/LastWeekRankingPopupLayer',
+            'LastWeekRankingPopupLayer'
+        ], canvas);
+        this.rankButtonNode ??= this.findNodeByPaths([
+            'Home/HeaderContainer/RankButton',
+            'HeaderContainer/RankButton',
+            'RankButton'
         ], canvas);
     }
 
@@ -109,6 +149,38 @@ export class GameView extends BaseUI {
             console.warn('[GameView] ActivityPopupRoot component not found');
         }
         return root;
+    }
+
+    private getLastWeekRankingPopupLayer(): LastWeekRankingPopupLayer | null {
+        this.resolveNodes();
+        const root = this.lastWeekRankingPopupLayerNode
+            ? this.lastWeekRankingPopupLayerNode.getComponent(LastWeekRankingPopupLayer)
+                ?? this.lastWeekRankingPopupLayerNode.addComponent(LastWeekRankingPopupLayer)
+            : null;
+        if (!root) {
+            console.warn('[GameView] LastWeekRankingPopupLayer component not found');
+        }
+        return root;
+    }
+
+    private bindRankButtonEvent() {
+        if (!this.rankButtonNode) {
+            console.warn('[GameView] RankButton not found');
+            return;
+        }
+
+        const button = this.rankButtonNode.getComponent(Button);
+        if (button) {
+            if (button.clickEvents.length > 0) {
+                return;
+            }
+            this.rankButtonNode.off(Button.EventType.CLICK, this.onRankButtonClick, this);
+            this.rankButtonNode.on(Button.EventType.CLICK, this.onRankButtonClick, this);
+            return;
+        }
+
+        this.rankButtonNode.off(Node.EventType.TOUCH_END, this.onRankButtonClick, this);
+        this.rankButtonNode.on(Node.EventType.TOUCH_END, this.onRankButtonClick, this);
     }
 
     private showSettingsPopupLayerFallback() {

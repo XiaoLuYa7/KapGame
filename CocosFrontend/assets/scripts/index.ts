@@ -23,6 +23,7 @@ export * from './ui/GameView';
 export * from './ui/ChatView';
 export * from './ui/SettingsPopupRoot';
 export * from './ui/ActivityPopupRoot';
+export * from './ui/LastWeekRankingPopupLayer';
 export * from './ui/ShopUI';
 export * from './ui/ChatUI';
 export * from './ui/LobbyUI';

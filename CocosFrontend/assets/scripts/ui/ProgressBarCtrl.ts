@@ -1,5 +1,6 @@
 import { _decorator, Component, Label, ProgressBar, director, resources, Prefab, tween, Sprite, Color, Node, UITransform, SpriteFrame } from 'cc';
 import { HomeUI } from './HomeUI';
+import { dataManager } from '../core/DataManager';
 
 const { ccclass, property } = _decorator;
 
@@ -153,6 +154,7 @@ export class ProgressBarCtrl extends Component {
 
         this.setProgress(100, 0.25);
         await this.delay(this.completeDelay * 1000);
+        dataManager.ensureDevelopmentLogin();
 
         director.loadScene(this.targetScene, (error: any) => {
             if (error) {
