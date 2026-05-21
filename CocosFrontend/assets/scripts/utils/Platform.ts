@@ -6,6 +6,7 @@
 export const Platform = {
     // 微信小游戏环境
     isWeChatGame: false,
+    rewardedVideoAdUnitId: '',
 
     // 初始化平台检测
     init() {
@@ -102,6 +103,52 @@ export const Platform = {
         if (this.isWeChatGame) {
             this.wx?.hideLoading();
         }
+    },
+
+    async showRewardedVideoAd(): Promise<boolean> {
+        if (!this.isWeChatGame) {
+            return true;
+        }
+
+        if (!this.wx?.createRewardedVideoAd || !this.rewardedVideoAdUnitId) {
+            this.showToast('广告暂未配置', 'none');
+            return false;
+        }
+
+        return new Promise(resolve => {
+            const ad = this.wx.createRewardedVideoAd({
+                adUnitId: this.rewardedVideoAdUnitId
+            });
+
+            const cleanup = () => {
+                ad.offLoad?.(onLoad);
+                ad.offError?.(onError);
+                ad.offClose?.(onClose);
+            };
+            const onLoad = () => { };
+            const onError = () => {
+                cleanup();
+                resolve(false);
+            };
+            const onClose = (result: any) => {
+                cleanup();
+                resolve(result?.isEnded !== false);
+            };
+
+            ad.onLoad?.(onLoad);
+            ad.onError?.(onError);
+            ad.onClose?.(onClose);
+            const showPromise = ad.show ? ad.show() : Promise.reject();
+            Promise.resolve(showPromise).catch(() => {
+                const loadPromise = ad.load ? ad.load() : Promise.reject();
+                Promise.resolve(loadPromise)
+                    .then(() => ad.show ? ad.show() : Promise.reject())
+                    .catch(() => {
+                        cleanup();
+                        resolve(false);
+                    });
+            });
+        });
     },
 
     async hasNotificationPermission(): Promise<boolean> {

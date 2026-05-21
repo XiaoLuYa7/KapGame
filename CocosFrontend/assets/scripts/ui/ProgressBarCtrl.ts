@@ -1,5 +1,5 @@
 import { _decorator, Component, Label, ProgressBar, director, resources, Prefab, tween, Sprite, Color, Node, UITransform, SpriteFrame } from 'cc';
-import { HomeUI } from './HomeUI';
+import { HomeView } from './HomeView';
 import { dataManager } from '../core/DataManager';
 
 const { ccclass, property } = _decorator;
@@ -52,12 +52,7 @@ export class ProgressBarCtrl extends Component {
     minLoadingSeconds: number = 0;
 
     @property({ type: [String] })
-    preloadPrefabPaths: string[] = [
-        'prefabs/HeaderContainer',
-        'prefabs/GameContainer',
-        'prefabs/ChatContainer',
-        'prefabs/TabBarContainer'
-    ];
+    preloadPrefabPaths: string[] = [];
 
     private progress = 0;
     private tweenTarget: any = null;
@@ -162,7 +157,7 @@ export class ProgressBarCtrl extends Component {
                 return;
             }
 
-            this.ensureHomeUI();
+            this.ensureHomeView();
         });
     }
 
@@ -213,7 +208,7 @@ export class ProgressBarCtrl extends Component {
         });
     }
 
-    private ensureHomeUI() {
+    private ensureHomeView() {
         const scene = director.getScene();
         const canvas = scene?.getChildByName('Canvas');
         const homeNode = canvas?.getChildByName('Home') ?? canvas;
@@ -222,8 +217,8 @@ export class ProgressBarCtrl extends Component {
             return;
         }
 
-        if (!homeNode.getComponent(HomeUI)) {
-            console.warn('[ProgressBarCtrl] HomeUI component is not mounted. Please add HomeUI to Home scene Canvas in Cocos Creator.');
+        if (!homeNode.getComponent(HomeView)) {
+            console.warn('[ProgressBarCtrl] HomeView component is not mounted. Please add HomeView to Home scene Canvas in Cocos Creator.');
         }
     }
 

@@ -18,6 +18,9 @@ public class CardConfig {
     @Column(nullable = false, length = 50)
     private String name;
 
+    @Column(name = "card_key", length = 50, unique = true)
+    private String cardKey;
+
     @Column(length = 200)
     private String description;
 
@@ -41,6 +44,27 @@ public class CardConfig {
 
     @Column(name = "is_active")
     private Boolean isActive = true;
+
+    @Column(name = "mode_scope", length = 30)
+    private String modeScope = "SOLO,TEAM";
+
+    @Column(name = "count_solo")
+    private Integer countSolo = 0;
+
+    @Column(name = "count_team")
+    private Integer countTeam = 0;
+
+    @Column(length = 30)
+    private String timing;
+
+    @Column(name = "target_type", length = 30)
+    private String targetType;
+
+    @Column(name = "can_be_countered")
+    private Boolean canBeCountered = false;
+
+    @Column(name = "icon_path", length = 200)
+    private String iconPath;
 
     @Column(columnDefinition = "json", nullable = false)
     private String effects; // JSON array of effect objects
@@ -70,6 +94,10 @@ public class CardConfig {
         if (power == null) power = 0;
         if (health == null) health = 0;
         if (isActive == null) isActive = true;
+        if (modeScope == null) modeScope = "SOLO,TEAM";
+        if (countSolo == null) countSolo = 0;
+        if (countTeam == null) countTeam = 0;
+        if (canBeCountered == null) canBeCountered = false;
     }
 
     @PreUpdate

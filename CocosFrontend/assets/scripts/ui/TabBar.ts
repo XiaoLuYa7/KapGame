@@ -1,4 +1,4 @@
-import { _decorator, Component, Button, Label, Color, director } from 'cc';
+import { _decorator, Component, Button, Label, Color, director, Node, Sprite } from 'cc';
 
 const { ccclass, property } = _decorator;
 
@@ -28,25 +28,23 @@ export class TabBarComponent extends Component {
     private readonly labelColor = new Color(0, 0, 0);
 
     onLoad() {
-        this.initTabs();
+        this.resolvePrefabNodes();
     }
 
     start() {
         this.setCurrentTab(this.currentIndex, false);
     }
 
-    onDestroy() {
-        this.tabButtons.forEach(button => button.node.targetOff(this));
-    }
-
     setCurrentTab(index: number, notify: boolean = true) {
         this.resolvePrefabNodes();
 
         if (index < 0 || index >= this.tabButtons.length) {
+            console.warn(`[TabBar] setCurrentTab ignored index=${index}, buttonCount=${this.tabButtons.length}`);
             return;
         }
 
         this.currentIndex = index;
+        console.log(`[TabBar] setCurrentTab index=${index} notify=${notify}`);
 
         this.updateAllTabAppearances();
 
@@ -59,37 +57,33 @@ export class TabBarComponent extends Component {
         this.setCurrentTab(this.currentIndex, false);
     }
 
-    private initTabs() {
-        this.resolvePrefabNodes();
-
-        this.tabButtons.forEach((button, index) => {
-            button.node.targetOff(this);
-            button.node.on(Button.EventType.CLICK, () => this.onTabClick(index), this);
-        });
+    onGameBarButtonClick() {
+        console.log('[TabBar] onGameBarButtonClick');
+        this.setCurrentTab(0, true);
     }
 
-    private onTabClick(index: number) {
-        if (index === this.currentIndex) {
-            return;
-        }
-
-        this.setCurrentTab(index, true);
+    onChatBarButtonClick() {
+        console.log('[TabBar] onChatBarButtonClick');
+        this.setCurrentTab(1, true);
     }
 
     private switchToContent(index: number) {
-        const homeUI = this.findHomeUI();
-        if (!homeUI || typeof homeUI.setActiveTab !== 'function') {
+        const homeView = this.findHomeView();
+        if (!homeView || typeof homeView.setActiveTab !== 'function') {
             console.warn('[TabBar] HomeView not found, cannot switch tab content');
             return;
         }
 
+        const tabName = index === 1 ? 'Chat' : 'Game';
+        const homeNodeName = homeView.node?.name ?? 'unknown';
+        console.log(`[TabBar] switchToContent index=${index} tab=${tabName} homeNode=${homeNodeName}`);
         switch (index) {
             case 1:
-                homeUI.setActiveTab('Chat', false);
+                void homeView.setActiveTab('Chat', false);
                 break;
             case 0:
             default:
-                homeUI.setActiveTab('Game', false);
+                void homeView.setActiveTab('Game', false);
                 break;
         }
     }
@@ -106,6 +100,7 @@ export class TabBarComponent extends Component {
             button.normalColor = targetColor.clone();
             button.hoverColor = targetColor.clone();
             button.pressedColor = targetColor.clone();
+            this.applySelectedBackground(button, index, isSelected);
         }
 
         const label = this.tabLabels[index];
@@ -124,13 +119,14 @@ export class TabBarComponent extends Component {
             shopButton.active = false;
         }
 
+        const barButtons = this.findChildDeep('BarButtons') ?? this.node;
         const buttonNames = ['GameBarButton', 'ChatBarButton'];
 
         const buttons = buttonNames
-            .map(name => this.getTabButton(name))
+            .map(name => this.getTabButton(name, barButtons))
             .filter((button): button is Button => !!button);
         const labels = buttonNames
-            .map(name => this.getTabLabel(name))
+            .map(name => this.getTabLabel(name, barButtons))
             .filter((label): label is Label => !!label);
 
         if (buttons.length > 0) {
@@ -141,20 +137,59 @@ export class TabBarComponent extends Component {
         }
     }
 
-    private getTabButton(nodeName: string): Button | null {
-        const buttonNode = this.node.getChildByName(nodeName);
+    private getTabButton(nodeName: string, root: Node = this.node): Button | null {
+        const buttonNode = this.findChildDeep(nodeName, root);
         return buttonNode?.getComponent(Button) ?? null;
     }
 
-    private getTabLabel(nodeName: string): Label | null {
-        const buttonNode = this.node.getChildByName(nodeName);
+    private getTabLabel(nodeName: string, root: Node = this.node): Label | null {
+        const buttonNode = this.findChildDeep(nodeName, root);
         const labelNode = buttonNode?.getChildByName('Label');
         return labelNode?.getComponent(Label) ?? null;
     }
 
-    private findHomeUI(): any {
+    private applySelectedBackground(button: Button, index: number, isSelected: boolean) {
+        const sprite = button.node.getComponent(Sprite);
+        if (!sprite) {
+            return;
+        }
+
+        sprite.enabled = isSelected;
+    }
+
+    private findChildDeep(name: string, root: Node = this.node): Node | null {
+        const direct = root.getChildByName(name);
+        if (direct) {
+            return direct;
+        }
+
+        for (const child of root.children) {
+            const result = this.findChildDeep(name, child);
+            if (result) {
+                return result;
+            }
+        }
+
+        return null;
+    }
+
+    private findHomeView(): any {
         const scene = director.getScene();
         const canvas = scene?.getChildByName('Canvas');
-        return canvas?.getComponentsInChildren('HomeView')[0] ?? canvas?.getComponentsInChildren('HomeUI')[0] ?? null;
+        let current: Node | null = this.node;
+        while (current) {
+            const component = current.getComponent('HomeView');
+            if (component) {
+                return component;
+            }
+            current = current.parent;
+        }
+
+        const canvasComponent = canvas?.getComponent('HomeView');
+        if (canvasComponent) {
+            return canvasComponent;
+        }
+
+        return canvas?.getComponentsInChildren('HomeView')[0] ?? null;
     }
 }

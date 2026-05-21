@@ -24,7 +24,11 @@ public class CardConfigServiceImpl implements CardConfigService {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     // 有效的卡牌类型
-    private static final List<String> VALID_TYPES = List.of("ATTACK", "DEFENSE", "UTILITY");
+    private static final List<String> VALID_TYPES = List.of(
+            "DANGER", "DEFENSE", "DETECT", "INTERFERE", "CONTROL",
+            "SURVIVAL", "TRANSFER", "DRAW", "COUNTER", "TEAMWORK",
+            "ATTACK", "UTILITY"
+    );
 
     // 有效的稀有度
     private static final List<String> VALID_RARITIES = List.of("COMMON", "RARE", "EPIC", "LEGENDARY");

@@ -10,6 +10,7 @@ import java.util.List;
 
 public interface GameService {
     GameStartResponse startGame();
+    GameStartResponse startGame(String modeKey);
     GameStateResponse getGameState(Long gameId);
     GameContext playCard(Long gameId, Integer cardId, Integer targetPlayerIndex);
     GameContext drawCard(Long gameId);

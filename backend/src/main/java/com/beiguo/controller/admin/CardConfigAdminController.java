@@ -77,10 +77,18 @@ public class CardConfigAdminController {
         CardConfig existing = existingOpt.get();
         // 更新字段
         if (cardConfig.getName() != null) existing.setName(cardConfig.getName());
+        if (cardConfig.getCardKey() != null) existing.setCardKey(cardConfig.getCardKey());
         if (cardConfig.getDescription() != null) existing.setDescription(cardConfig.getDescription());
         if (cardConfig.getType() != null) existing.setType(cardConfig.getType());
         if (cardConfig.getRarity() != null) existing.setRarity(cardConfig.getRarity());
         if (cardConfig.getImageUrl() != null) existing.setImageUrl(cardConfig.getImageUrl());
+        if (cardConfig.getModeScope() != null) existing.setModeScope(cardConfig.getModeScope());
+        if (cardConfig.getCountSolo() != null) existing.setCountSolo(cardConfig.getCountSolo());
+        if (cardConfig.getCountTeam() != null) existing.setCountTeam(cardConfig.getCountTeam());
+        if (cardConfig.getTiming() != null) existing.setTiming(cardConfig.getTiming());
+        if (cardConfig.getTargetType() != null) existing.setTargetType(cardConfig.getTargetType());
+        if (cardConfig.getCanBeCountered() != null) existing.setCanBeCountered(cardConfig.getCanBeCountered());
+        if (cardConfig.getIconPath() != null) existing.setIconPath(cardConfig.getIconPath());
         if (cardConfig.getManaCost() != null) existing.setManaCost(cardConfig.getManaCost());
         if (cardConfig.getPower() != null) existing.setPower(cardConfig.getPower());
         if (cardConfig.getHealth() != null) existing.setHealth(cardConfig.getHealth());

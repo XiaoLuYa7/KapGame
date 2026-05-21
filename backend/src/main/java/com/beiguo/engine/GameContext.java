@@ -12,6 +12,9 @@ public class GameContext {
     private Player currentPlayer;
     private Integer targetPlayerIndex;
     private Integer cardId;
+    private Integer drawnCardId;
+    private boolean turnSkipped;
+    private boolean countered;
 
     // 临时存储处理结果
     private String message;

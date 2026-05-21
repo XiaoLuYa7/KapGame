@@ -1,13 +1,16 @@
 package com.beiguo.controller;
 
 import com.beiguo.dto.ApiResponse;
+import com.beiguo.dto.DailyCheckInResponse;
 import com.beiguo.entity.User;
+import com.beiguo.service.DailyCheckInService;
 import com.beiguo.service.UserService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import lombok.Data;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -19,6 +22,36 @@ import org.springframework.web.bind.annotation.RestController;
 public class UserController {
     @Autowired
     private UserService userService;
+
+    @Autowired
+    private DailyCheckInService dailyCheckInService;
+
+    @GetMapping("/daily-check-in")
+    public ApiResponse<DailyCheckInResponse> getDailyCheckIn() {
+        try {
+            return ApiResponse.success(dailyCheckInService.getCurrentWeek());
+        } catch (RuntimeException e) {
+            return ApiResponse.error(e.getMessage());
+        }
+    }
+
+    @PostMapping("/daily-check-in/claim")
+    public ApiResponse<DailyCheckInResponse> claimDailyCheckIn() {
+        try {
+            return ApiResponse.success("签到奖励领取成功", dailyCheckInService.claimToday());
+        } catch (RuntimeException e) {
+            return ApiResponse.error(e.getMessage());
+        }
+    }
+
+    @PostMapping("/daily-check-in/claim-double")
+    public ApiResponse<DailyCheckInResponse> claimDailyCheckInDouble() {
+        try {
+            return ApiResponse.success("双倍签到奖励领取成功", dailyCheckInService.claimTodayWithMultiplier(2));
+        } catch (RuntimeException e) {
+            return ApiResponse.error(e.getMessage());
+        }
+    }
 
     @PostMapping("/bind-phone")
     public ApiResponse<User> bindPhone(@Valid @RequestBody BindPhoneRequest request) {

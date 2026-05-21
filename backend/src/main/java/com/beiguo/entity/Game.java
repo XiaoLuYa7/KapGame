@@ -17,10 +17,16 @@ public class Game {
     private String status = "WAITING"; // WAITING, PLAYING, FINISHED, PAUSED, CANCELLED
 
     @Column(name = "game_mode", length = 20)
-    private String gameMode = "STANDARD"; // STANDARD, RANKED, CASUAL
+    private String gameMode = "SOLO"; // SOLO, TEAM
+
+    @Column(name = "mode_config_key", length = 20)
+    private String modeConfigKey = "SOLO";
 
     @Column(name = "current_turn")
     private Integer currentTurn = 0;
+
+    @Column(name = "turn_direction")
+    private Integer turnDirection = 1;
 
     @Column(name = "current_player_index")
     private Integer currentPlayerIndex = 0;
@@ -53,6 +59,9 @@ public class Game {
     protected void onCreate() {
         createTime = LocalDateTime.now();
         updateTime = LocalDateTime.now();
+        if (gameMode == null) gameMode = "SOLO";
+        if (modeConfigKey == null) modeConfigKey = gameMode;
+        if (turnDirection == null) turnDirection = 1;
     }
 
     @PreUpdate

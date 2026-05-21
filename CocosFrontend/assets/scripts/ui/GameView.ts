@@ -5,7 +5,12 @@ import { Http } from '../network/Http';
 import { Activity, dataManager, FunctionItem, GameMode } from '../core/DataManager';
 import { SettingsPopupRoot } from './SettingsPopupRoot';
 import { ActivityPopupRoot } from './ActivityPopupRoot';
+import { WeekRankingPopupLayer } from './WeekRankingPopupLayer';
 import { LastWeekRankingPopupLayer } from './LastWeekRankingPopupLayer';
+import { PopupPrefabLoader } from './PopupPrefabLoader';
+import { RankingsPage } from './RankingsPage';
+import { BackPackPopupLayer } from './BackPackPopupLayer';
+import { FlipRewardPopupLayer } from './FlipRewardPopupLayer';
 
 const { ccclass, property } = _decorator;
 
@@ -18,14 +23,23 @@ export class GameView extends BaseUI {
     activityPopupRootNode: Node | null = null;
 
     @property(Node)
+    weekRankingPopupLayerNode: Node | null = null;
+
+    @property(Node)
     lastWeekRankingPopupLayerNode: Node | null = null;
 
     @property(Node)
-    rankButtonNode: Node | null = null;
+    backPackPopupLayerNode: Node | null = null;
+
+    @property(Node)
+    flipRewardPopupLayerNode: Node | null = null;
+
+    private openingBackPackPopup = false;
+    private openingFlipRewardPopup = false;
 
     onEnter() {
         this.resolveNodes();
-        this.bindRankButtonEvent();
+        this.bindFunctionPanelEvents();
         this.loadActivities();
     }
 
@@ -35,8 +49,14 @@ export class GameView extends BaseUI {
 
     onSettingButtonClick() {
         console.log('[GameView] onSettingButtonClick');
-        const settingsPopupRoot = this.getSettingsPopupRoot();
+        void this.openSettingsPopupRoot();
+    }
+
+    private async openSettingsPopupRoot() {
+        const settingsPopupRoot = await this.getSettingsPopupRootAsync();
         if (settingsPopupRoot) {
+            this.activatePopupParent(settingsPopupRoot.node);
+            this.bringNodeToFront(settingsPopupRoot.node);
             settingsPopupRoot.showSettingsPopup();
             return;
         }
@@ -69,7 +89,7 @@ export class GameView extends BaseUI {
     onActivityClick(activity: Activity) {
         console.log('[GameView] Activity clicked:', activity);
         if (activity.activityType === 'SIGNIN') {
-            void this.getActivityPopupRoot()?.showDailyCheckInPopup();
+            void this.showDailyCheckInPopup();
             return;
         }
         Platform.showToast('Activity detail is in development', 'none');
@@ -77,40 +97,229 @@ export class GameView extends BaseUI {
 
     onGameModeClick(mode: GameMode) {
         console.log('[GameView] Game mode clicked:', mode);
-        Platform.showToast(`${mode.title} is in development`, 'none');
+        Platform.showToast(`${mode.title} 即将进入捣蛋工坊`, 'none');
     }
 
     onFunctionClick(func: FunctionItem) {
         console.log('[GameView] Function clicked:', func);
+        if (func.route === 'rankings') {
+            void this.openRankingsPage();
+            return;
+        }
+        if (func.route === 'backpack') {
+            void this.openBackPackPopup();
+            return;
+        }
+        if (func.route === 'flipReward') {
+            void this.openFlipRewardPopup();
+            return;
+        }
         Platform.showToast(`${func.title} is in development`, 'none');
     }
 
     onLevelRewardButtonClick() {
         console.log('[GameView] onLevelRewardButtonClick');
-        void this.getActivityPopupRoot()?.showLevelRewardPopup();
+        void this.showLevelRewardPopup();
     }
 
     onBountyTaskButtonClick() {
         console.log('[GameView] onBountyTaskButtonClick');
-        void this.getActivityPopupRoot()?.showBountyTaskPopup();
+        void this.showBountyTaskPopup();
     }
 
     onDailyCheckInButtonClick() {
         console.log('[GameView] onDailyCheckInButtonClick');
-        void this.getActivityPopupRoot()?.showDailyCheckInPopup();
+        void this.showDailyCheckInPopup();
     }
 
     onRankButtonClick() {
-        this.openLastWeekRankingPopup();
+        const weeklyBattleGold = Number(dataManager.userData.weeklyBattleGold ?? 0);
+        console.log(`[GameView] onRankButtonClick weeklyBattleGold=${weeklyBattleGold}`);
+        if (weeklyBattleGold <= 0) {
+            void this.openLastWeekRankingPopup();
+            return;
+        }
+
+        void this.openWeekRankingPopup();
     }
 
-    openLastWeekRankingPopup() {
+    async openWeekRankingPopup() {
+        console.log('[GameView] openWeekRankingPopup');
+        const popup = await this.getWeekRankingPopupLayerAsync();
+        if (!popup) {
+            console.warn('[GameView] WeekRankingPopupLayer open failed: popup is null');
+            return;
+        }
+        this.activatePopupParent(popup.node);
+        this.bringNodeToFront(popup.node);
+        void popup?.open();
+    }
+
+    async openLastWeekRankingPopup() {
         console.log('[GameView] openLastWeekRankingPopup');
-        void this.getLastWeekRankingPopupLayer()?.open();
+        const popup = await this.getLastWeekRankingPopupLayerAsync();
+        if (!popup) {
+            console.warn('[GameView] LastWeekRankingPopupLayer open failed: popup is null');
+            return;
+        }
+        this.activatePopupParent(popup.node);
+        this.bringNodeToFront(popup.node);
+        void popup?.open();
+    }
+
+    private async showLevelRewardPopup() {
+        const root = await this.getActivityPopupRootAsync();
+        if (!root) {
+            console.warn('[GameView] showLevelRewardPopup failed: ActivityPopupRoot is null');
+            return;
+        }
+        this.activatePopupParent(root.node);
+        this.bringNodeToFront(root.node);
+        root.node.active = true;
+        await root.showLevelRewardPopup();
+    }
+
+    private async showBountyTaskPopup() {
+        const root = await this.getActivityPopupRootAsync();
+        if (!root) {
+            console.warn('[GameView] showBountyTaskPopup failed: ActivityPopupRoot is null');
+            return;
+        }
+        this.activatePopupParent(root.node);
+        this.bringNodeToFront(root.node);
+        root.node.active = true;
+        await root.showBountyTaskPopup();
+    }
+
+    private async showDailyCheckInPopup() {
+        const root = await this.getActivityPopupRootAsync();
+        if (!root) {
+            console.warn('[GameView] showDailyCheckInPopup failed: ActivityPopupRoot is null');
+            return;
+        }
+        this.activatePopupParent(root.node);
+        this.bringNodeToFront(root.node);
+        root.node.active = true;
+        await root.showDailyCheckInPopup();
+    }
+
+    private preloadWeekRankingPopup() {
+        this.getWeekRankingPopupLayer()?.preload();
+        this.getLastWeekRankingPopupLayer()?.preload();
+        void PopupPrefabLoader.preloadPopup('WeekRankingPopupLayer');
+        void PopupPrefabLoader.preloadPopup('LastWeekRankingPopupLayer');
+    }
+
+    private preloadRankingsPage() {
+        const rankingsPageNode = this.getCanvasNode()?.getChildByName('RankingsPage') ?? null;
+        if (!rankingsPageNode?.isValid) {
+            return;
+        }
+
+        const rankingsPage = rankingsPageNode.getComponent(RankingsPage) ?? rankingsPageNode.addComponent(RankingsPage);
+        void rankingsPage.preload();
     }
 
     private updateActivitiesUI(activities: Activity[]) {
         console.log('[GameView] Activities:', activities);
+    }
+
+    private async openRankingsPage() {
+        const rankingsPageNode = this.getCanvasNode()?.getChildByName('RankingsPage') ?? null;
+        if (!rankingsPageNode?.isValid) {
+            console.warn('[GameView] RankingsPage node not found');
+            return;
+        }
+
+        const rankingsPage = rankingsPageNode.getComponent(RankingsPage) ?? rankingsPageNode.addComponent(RankingsPage);
+        await rankingsPage.open();
+    }
+
+    private async openBackPackPopup() {
+        if (this.openingBackPackPopup) {
+            console.log('[GameView] openBackPackPopup skipped: opening');
+            return;
+        }
+
+        this.openingBackPackPopup = true;
+        console.log('[GameView] openBackPackPopup');
+        try {
+            const popup = await this.getBackPackPopupLayerAsync();
+            if (!popup) {
+                console.warn('[GameView] BackPackPopupLayer open failed: popup is null');
+                return;
+            }
+
+            this.activatePopupParent(popup.node);
+            this.bringNodeToFront(popup.node);
+            await popup.open('decorate');
+        } finally {
+            this.openingBackPackPopup = false;
+        }
+    }
+
+    async openFlipRewardPopup() {
+        if (this.openingFlipRewardPopup) {
+            console.log('[GameView] openFlipRewardPopup skipped: opening');
+            return;
+        }
+
+        this.openingFlipRewardPopup = true;
+        console.log('[GameView] openFlipRewardPopup');
+        try {
+            const popup = await this.getFlipRewardPopupLayerAsync();
+            if (!popup) {
+                console.warn('[GameView] FlipRewardPopupLayer open failed: popup is null');
+                return;
+            }
+
+            this.activatePopupParent(popup.node);
+            this.bringNodeToFront(popup.node);
+            popup.open();
+        } finally {
+            this.openingFlipRewardPopup = false;
+        }
+    }
+
+    private bindFunctionPanelEvents() {
+        const rankingListNode = this.node.getChildByPath('FunctionPanel/RankingList')
+            ?? this.getCanvasNode()?.getChildByPath('Home/GameContainer/FunctionPanel/RankingList')
+            ?? null;
+        this.bindClick(rankingListNode, () => void this.openRankingsPage(), 'FunctionPanel/RankingList');
+
+        const backpackNode = this.node.getChildByPath('FunctionPanel/Backpack')
+            ?? this.getCanvasNode()?.getChildByPath('Home/GameContainer/FunctionPanel/Backpack')
+            ?? null;
+        this.bindClick(backpackNode, () => void this.openBackPackPopup(), 'FunctionPanel/Backpack');
+
+        const flipRewardNode = this.node.getChildByPath('FunctionPanel/FlipReward')
+            ?? this.getCanvasNode()?.getChildByPath('Home/GameContainer/FunctionPanel/FlipReward')
+            ?? null;
+        this.bindClick(flipRewardNode, () => void this.openFlipRewardPopup(), 'FunctionPanel/FlipReward');
+    }
+
+    private bindClick(node: Node | null, handler: () => void, debugName: string) {
+        if (!node?.isValid) {
+            return;
+        }
+
+        const button = node.getComponent(Button);
+        node.targetOff(this);
+        let lastTriggerAt = 0;
+        const wrappedHandler = () => {
+            const now = Date.now();
+            if (now - lastTriggerAt < 80) {
+                return;
+            }
+            lastTriggerAt = now;
+            handler();
+        };
+        if (button) {
+            button.interactable = true;
+            node.on(Button.EventType.CLICK, wrappedHandler, this);
+        }
+        node.on(Node.EventType.TOUCH_END, wrappedHandler, this);
+        console.log(`[GameView] bind click success: ${debugName}`);
     }
 
     private resolveNodes() {
@@ -120,26 +329,44 @@ export class GameView extends BaseUI {
             'SettinsPopupRoot'
         ], canvas);
         this.activityPopupRootNode ??= this.findNodeByPaths([
-            'ActivityPopupRoot'
+            'PopupRoot'
         ], canvas);
-        this.lastWeekRankingPopupLayerNode ??= this.findNodeByPaths([
-            'ActivityPopupRoot/LastWeekRankingPopupLayer',
-            'LastWeekRankingPopupLayer'
+        this.weekRankingPopupLayerNode ??= this.findNodeByPaths([
+            'PopupRoot/WeekRankingPopupLayer',
+            'WeekRankingPopupLayer'
         ], canvas);
-        this.rankButtonNode ??= this.findNodeByPaths([
-            'Home/HeaderContainer/RankButton',
-            'HeaderContainer/RankButton',
-            'RankButton'
+        this.lastWeekRankingPopupLayerNode ??= this.findLastWeekRankingPopupNode(canvas);
+        this.backPackPopupLayerNode ??= this.findNodeByPaths([
+            'PopupRoot/BackPackPopupLayer',
+            'BackPackPopupLayer'
+        ], canvas);
+        this.flipRewardPopupLayerNode ??= this.findNodeByPaths([
+            'PopupRoot/FlipRewardPopupLayer',
+            'FlipRewardPopupLayer'
         ], canvas);
     }
 
     private getSettingsPopupRoot(): SettingsPopupRoot | null {
         this.resolveNodes();
-        const root = this.settingsPopupRootNode?.getComponent(SettingsPopupRoot) ?? null;
+        const root = this.settingsPopupRootNode
+            ? this.settingsPopupRootNode.getComponent(SettingsPopupRoot)
+                ?? this.settingsPopupRootNode.addComponent(SettingsPopupRoot)
+            : null;
         if (!root) {
             console.warn('[GameView] SettingsPopupRoot component not found');
         }
         return root;
+    }
+
+    private async getSettingsPopupRootAsync(): Promise<SettingsPopupRoot | null> {
+        this.resolveNodes();
+        if (!this.settingsPopupRootNode?.isValid) {
+            this.settingsPopupRootNode = await PopupPrefabLoader.ensurePopupNode(this.getCanvasNode(), 'SettinsPopupRoot');
+        }
+        if (this.settingsPopupRootNode?.isValid) {
+            this.settingsPopupRootNode.active = true;
+        }
+        return this.getSettingsPopupRoot();
     }
 
     private getActivityPopupRoot(): ActivityPopupRoot | null {
@@ -149,6 +376,49 @@ export class GameView extends BaseUI {
             console.warn('[GameView] ActivityPopupRoot component not found');
         }
         return root;
+    }
+
+    private async getActivityPopupRootAsync(): Promise<ActivityPopupRoot | null> {
+        this.resolveNodes();
+        if (!this.activityPopupRootNode?.isValid) {
+            const canvas = this.getCanvasNode();
+            this.activityPopupRootNode = PopupPrefabLoader.findNodeByName(canvas, 'PopupRoot');
+            if (!this.activityPopupRootNode?.isValid && canvas?.isValid) {
+                this.activityPopupRootNode = new Node('PopupRoot');
+                canvas.addChild(this.activityPopupRootNode);
+            }
+        }
+
+        if (!this.activityPopupRootNode?.isValid) {
+            return null;
+        }
+
+        this.activityPopupRootNode.active = true;
+        return this.activityPopupRootNode.getComponent(ActivityPopupRoot)
+            ?? this.activityPopupRootNode.addComponent(ActivityPopupRoot);
+    }
+
+    private getWeekRankingPopupLayer(): WeekRankingPopupLayer | null {
+        this.resolveNodes();
+        const root = this.weekRankingPopupLayerNode
+            ? this.weekRankingPopupLayerNode.getComponent(WeekRankingPopupLayer)
+                ?? this.weekRankingPopupLayerNode.addComponent(WeekRankingPopupLayer)
+            : null;
+        if (!root) {
+            console.warn('[GameView] WeekRankingPopupLayer component not found');
+        }
+        return root;
+    }
+
+    private async getWeekRankingPopupLayerAsync(): Promise<WeekRankingPopupLayer | null> {
+        this.resolveNodes();
+        if (!this.weekRankingPopupLayerNode?.isValid) {
+            this.weekRankingPopupLayerNode = await PopupPrefabLoader.ensurePopupNode(
+                this.getPopupParentNode(),
+                'WeekRankingPopupLayer'
+            );
+        }
+        return this.getWeekRankingPopupLayer();
     }
 
     private getLastWeekRankingPopupLayer(): LastWeekRankingPopupLayer | null {
@@ -163,24 +433,80 @@ export class GameView extends BaseUI {
         return root;
     }
 
-    private bindRankButtonEvent() {
-        if (!this.rankButtonNode) {
-            console.warn('[GameView] RankButton not found');
-            return;
+    private async getLastWeekRankingPopupLayerAsync(): Promise<LastWeekRankingPopupLayer | null> {
+        this.resolveNodes();
+        if (!this.lastWeekRankingPopupLayerNode?.isValid) {
+            this.lastWeekRankingPopupLayerNode = await PopupPrefabLoader.ensurePopupNode(
+                this.getPopupParentNode(),
+                'LastWeekRankingPopupLayer'
+            );
+        }
+        return this.getLastWeekRankingPopupLayer();
+    }
+
+    private getBackPackPopupLayer(): BackPackPopupLayer | null {
+        this.resolveNodes();
+        const root = this.backPackPopupLayerNode
+            ? this.backPackPopupLayerNode.getComponent(BackPackPopupLayer)
+                ?? this.backPackPopupLayerNode.addComponent(BackPackPopupLayer)
+            : null;
+        if (!root) {
+            console.warn('[GameView] BackPackPopupLayer component not found');
+        }
+        return root;
+    }
+
+    private async getBackPackPopupLayerAsync(): Promise<BackPackPopupLayer | null> {
+        this.resolveNodes();
+        if (!this.backPackPopupLayerNode?.isValid) {
+            this.backPackPopupLayerNode = PopupPrefabLoader.findNodeByName(this.getPopupParentNode(), 'BackPackPopupLayer')
+                ?? PopupPrefabLoader.findNodeByName(this.getCanvasNode(), 'BackPackPopupLayer');
+        }
+        return this.getBackPackPopupLayer();
+    }
+
+    private getFlipRewardPopupLayer(): FlipRewardPopupLayer | null {
+        this.resolveNodes();
+        const root = this.flipRewardPopupLayerNode
+            ? this.flipRewardPopupLayerNode.getComponent(FlipRewardPopupLayer)
+                ?? this.flipRewardPopupLayerNode.addComponent(FlipRewardPopupLayer)
+            : null;
+        if (!root) {
+            console.warn('[GameView] FlipRewardPopupLayer component not found');
+        }
+        return root;
+    }
+
+    private async getFlipRewardPopupLayerAsync(): Promise<FlipRewardPopupLayer | null> {
+        this.resolveNodes();
+        if (!this.flipRewardPopupLayerNode?.isValid) {
+            this.flipRewardPopupLayerNode = PopupPrefabLoader.findNodeByName(this.getPopupParentNode(), 'FlipRewardPopupLayer')
+                ?? PopupPrefabLoader.findNodeByName(this.getCanvasNode(), 'FlipRewardPopupLayer');
+        }
+        return this.getFlipRewardPopupLayer();
+    }
+
+    private findLastWeekRankingPopupNode(root: Node | null): Node | null {
+        if (!root) {
+            return null;
         }
 
-        const button = this.rankButtonNode.getComponent(Button);
-        if (button) {
-            if (button.clickEvents.length > 0) {
-                return;
+        if (
+            root.name === 'LastWeekRankingPopupLayer'
+            && root.getChildByPath('PopupPanel/ContentNode')
+            && !root.getChildByPath('PopupPanel/ResourcesPanel')
+        ) {
+            return root;
+        }
+
+        for (const child of root.children) {
+            const result = this.findLastWeekRankingPopupNode(child);
+            if (result) {
+                return result;
             }
-            this.rankButtonNode.off(Button.EventType.CLICK, this.onRankButtonClick, this);
-            this.rankButtonNode.on(Button.EventType.CLICK, this.onRankButtonClick, this);
-            return;
         }
 
-        this.rankButtonNode.off(Node.EventType.TOUCH_END, this.onRankButtonClick, this);
-        this.rankButtonNode.on(Node.EventType.TOUCH_END, this.onRankButtonClick, this);
+        return null;
     }
 
     private showSettingsPopupLayerFallback() {
@@ -195,6 +521,29 @@ export class GameView extends BaseUI {
         layer.active = true;
         layer.setSiblingIndex(this.settingsPopupRootNode!.children.length - 1);
         console.log('[GameView] SettingsPopupLayer fallback active:', layer.active);
+    }
+
+    private getPopupParentNode(): Node | null {
+        this.resolveNodes();
+        return this.activityPopupRootNode?.isValid
+            ? this.activityPopupRootNode
+            : this.getCanvasNode();
+    }
+
+    private activatePopupParent(node: Node | null | undefined) {
+        let current = node?.parent ?? null;
+        while (current) {
+            current.active = true;
+            current = current.parent;
+        }
+    }
+
+    private bringNodeToFront(node: Node | null | undefined) {
+        if (!node?.isValid || !node.parent?.isValid) {
+            return;
+        }
+
+        node.setSiblingIndex(node.parent.children.length - 1);
     }
 
     private getCanvasNode(): Node | null {

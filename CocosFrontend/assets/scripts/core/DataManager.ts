@@ -5,6 +5,7 @@
 import { sys } from 'cc';
 import { Http } from '../network/Http';
 import { Platform } from '../utils/Platform';
+import { MISCHIEF_GAME_MODES } from '../config/MischiefConfigs';
 
 export interface UserData {
     userId: number | string;
@@ -47,10 +48,57 @@ export interface FunctionItem {
     route: string;
 }
 
+export interface DevelopmentDailyCheckInReward {
+    dayIndex: number;
+    rewardType: string;
+    rewardCount: number;
+    claimed: boolean;
+    claimable: boolean;
+}
+
+export interface DevelopmentDailyCheckInData {
+    weekStartDate: string;
+    todayIndex: number;
+    todayClaimed: boolean;
+    userGold: number;
+    userDiamond: number;
+    rewards: DevelopmentDailyCheckInReward[];
+}
+
+export interface DevelopmentLevelRewardItem {
+    id: number;
+    level: number;
+    rewardType: string;
+    rewardCount: number;
+    rewards?: DevelopmentLevelRewardPart[];
+    canClaim: boolean;
+    claimed: boolean;
+}
+
+export interface DevelopmentLevelRewardPart {
+    rewardType: string;
+    rewardCount: number;
+}
+
+export interface DevelopmentLevelRewardData {
+    username: string;
+    avatarUrl: string;
+    level: number;
+    exp: number;
+    nextLevelExp: number;
+    rewards: DevelopmentLevelRewardItem[];
+}
+
+type UserDataChangeListener = (userData: UserData) => void;
+
 export class DataManager {
     private static instance: DataManager;
     private readonly developmentTokenStorageKey = 'kapgame_development_token';
     private readonly developmentUserInfoStorageKey = 'kapgame_development_user_info';
+    private developmentDailyCheckInData: DevelopmentDailyCheckInData | null = null;
+    private developmentLevelRewardData: DevelopmentLevelRewardData | null = null;
+    private developmentLoginGeneratedThisSession = false;
+    private userDataChangeListeners: UserDataChangeListener[] = [];
 
     // 用户数据
     userData: UserData = {
@@ -78,9 +126,8 @@ export class DataManager {
 
     // 玩法模式
     gameModes: GameMode[] = [
-        { id: 1, title: '段位挑战', desc: '排位对战，提升段位', icon: 'trophy', route: 'rank' },
-        { id: 2, title: '休闲模式', desc: '轻松对战，无压力', icon: 'smile', route: 'casual' },
-        { id: 3, title: '好友同玩', desc: '邀请好友一起玩', icon: 'users', route: 'friend' }
+        { id: 1, title: MISCHIEF_GAME_MODES[0].name, desc: MISCHIEF_GAME_MODES[0].description, icon: 'trophy', route: 'solo' },
+        { id: 2, title: MISCHIEF_GAME_MODES[1].name, desc: MISCHIEF_GAME_MODES[1].description, icon: 'users', route: 'team' }
     ];
 
     // 功能列表
@@ -145,37 +192,117 @@ export class DataManager {
 
     // 开发环境自动创建本地用户，方便编辑器和浏览器测试保持登录态
     ensureDevelopmentLogin() {
-        if (!this.isDevelopmentEnvironment() || this.isLoggedIn) {
+        if (!this.isDevelopmentEnvironment()) {
+            return;
+        }
+        if (this.developmentLoginGeneratedThisSession) {
             return;
         }
 
-        const storedLogin = this.getDevelopmentStoredLogin();
-        if (storedLogin) {
-            this.applyLoggedInState(storedLogin.token, storedLogin.userInfo);
-            return;
-        }
-
-        const userInfo = {
-            id: 'local-dev-user',
-            userId: 'local-dev-user',
-            nickName: '测试用户',
-            username: '测试用户',
-            avatarUrl: '',
-            rank: '青铜 III',
-            rankCode: 'BRONZE',
-            rankName: '青铜',
-            rankIcon: 'rank/bronze',
-            diamond: 120,
-            gold: 8800,
-            level: 8,
-            exp: 260,
-            weeklyBattleGold: 12800,
-            isDevelopmentUser: true
-        };
+        const userInfo = this.createDevelopmentUserInfo();
         const token = 'local_dev_token';
 
         this.applyLoggedInState(token, userInfo);
+        this.developmentDailyCheckInData = this.createDevelopmentDailyCheckInData();
+        this.developmentLevelRewardData = this.createDevelopmentLevelRewardData();
+        this.developmentLoginGeneratedThisSession = true;
         this.saveDevelopmentLogin(token, userInfo);
+    }
+
+    getDevelopmentDailyCheckInData(): DevelopmentDailyCheckInData | null {
+        if (!this.userData.isDevelopmentUser) {
+            return null;
+        }
+        if (!this.developmentDailyCheckInData) {
+            this.developmentDailyCheckInData = this.createDevelopmentDailyCheckInData();
+        }
+        return this.cloneData(this.developmentDailyCheckInData);
+    }
+
+    claimDevelopmentDailyCheckIn(multiplier: number = 1, diamondCost: number = 0): DevelopmentDailyCheckInData | null {
+        if (!this.userData.isDevelopmentUser) {
+            return null;
+        }
+        if (!this.developmentDailyCheckInData) {
+            this.developmentDailyCheckInData = this.createDevelopmentDailyCheckInData();
+        }
+
+        const data = this.developmentDailyCheckInData;
+        if (!data.todayClaimed) {
+            const reward = this.getDevelopmentDailyCheckInClaimReward(data);
+            if (reward) {
+                const cost = Math.max(0, Math.floor(diamondCost || 0));
+                if (cost > 0 && this.userData.diamond < cost) {
+                    return null;
+                }
+
+                const rewardMultiplier = Math.max(1, Math.floor(multiplier || 1));
+                const amount = reward.rewardCount * rewardMultiplier;
+                reward.claimed = true;
+                reward.claimable = false;
+                const nextDiamond = Math.max(0, this.userData.diamond - cost) + (reward.rewardType === 'DIAMOND' ? amount : 0);
+                const nextGold = this.userData.gold + (reward.rewardType === 'DIAMOND' ? 0 : amount);
+                this.updateUserData({ diamond: nextDiamond, gold: nextGold });
+            }
+            data.todayClaimed = true;
+            data.rewards.forEach(item => item.claimable = false);
+        }
+
+        data.userGold = this.userData.gold;
+        data.userDiamond = this.userData.diamond;
+        this.persistDevelopmentUserInfo();
+        return this.cloneData(data);
+    }
+
+    getDevelopmentLevelRewardData(): DevelopmentLevelRewardData | null {
+        if (!this.userData.isDevelopmentUser) {
+            return null;
+        }
+        if (!this.developmentLevelRewardData) {
+            this.developmentLevelRewardData = this.createDevelopmentLevelRewardData();
+        }
+        return this.cloneData(this.developmentLevelRewardData);
+    }
+
+    claimDevelopmentLevelReward(
+        rewardId: number,
+        multiplier: number = 1,
+        diamondCost: number = 0,
+        rewardType?: string,
+        rewardCount?: number,
+        finishClaim: boolean = true
+    ): DevelopmentLevelRewardData | null {
+        if (!this.userData.isDevelopmentUser) {
+            return null;
+        }
+        if (!this.developmentLevelRewardData) {
+            this.developmentLevelRewardData = this.createDevelopmentLevelRewardData();
+        }
+
+        const reward = this.developmentLevelRewardData.rewards.find(item => item.id === rewardId);
+        if (reward && reward.canClaim && !reward.claimed) {
+            const rewardMultiplier = Math.max(1, Math.floor(multiplier || 1));
+            const cost = Math.max(0, Math.floor(diamondCost || 0));
+            if (cost > 0 && this.userData.diamond < cost) {
+                return null;
+            }
+
+            if (finishClaim) {
+                reward.claimed = true;
+                reward.canClaim = false;
+            }
+            const appliedRewardType = String(rewardType || reward.rewardType || 'GOLD').toUpperCase();
+            const appliedRewardCount = Math.max(0, Math.floor(rewardCount ?? reward.rewardCount ?? 0));
+            const finalRewardCount = appliedRewardCount * rewardMultiplier;
+            const nextDiamond = Math.max(0, this.userData.diamond - cost) + (appliedRewardType === 'DIAMOND' ? finalRewardCount : 0);
+            const nextGold = this.userData.gold + (appliedRewardType === 'DIAMOND' ? 0 : finalRewardCount);
+            this.updateUserData({ diamond: nextDiamond, gold: nextGold });
+        }
+
+        this.developmentLevelRewardData.username = this.userData.username;
+        this.developmentLevelRewardData.avatarUrl = this.userData.avatarUrl;
+        this.persistDevelopmentUserInfo();
+        return this.cloneData(this.developmentLevelRewardData);
     }
 
     // 登出
@@ -202,17 +329,208 @@ export class DataManager {
             wx.removeStorageSync('userInfo');
         } else if (this.isDevelopmentEnvironment()) {
             this.clearDevelopmentLogin();
+            this.developmentDailyCheckInData = null;
+            this.developmentLevelRewardData = null;
+            this.developmentLoginGeneratedThisSession = false;
         }
+        this.notifyUserDataChanged();
     }
 
     // 更新用户数据
     updateUserData(data: Partial<UserData>) {
         this.userData = { ...this.userData, ...data };
+        this.persistDevelopmentUserInfo();
+        this.notifyUserDataChanged();
+    }
+
+    subscribeUserData(listener: UserDataChangeListener): () => void {
+        this.userDataChangeListeners.push(listener);
+        listener(this.userData);
+        return () => {
+            this.userDataChangeListeners = this.userDataChangeListeners.filter(item => item !== listener);
+        };
+    }
+
+    private notifyUserDataChanged() {
+        const userData = this.userData;
+        this.userDataChangeListeners.forEach(listener => listener(userData));
     }
 
     // 设置活动列表
     setActivities(activities: Activity[]) {
         this.activities = activities;
+    }
+
+    private createDevelopmentUserInfo() {
+        const rankCodes = ['BRONZE', 'SILVER', 'GOLD', 'PLATINUM', 'DIAMOND', 'STARSHINE', 'MASTER', 'KING'];
+        const names = ['测试玩家', '捣蛋喵', '本地骑士', '星耀旅人', '金币猎手', '段位挑战者'];
+        const rankCode = this.pickRandom(rankCodes);
+        const rankName = this.getRankNameByCode(rankCode);
+        const level = this.randomInt(30, 60);
+        const nextLevelExp = this.getDevelopmentNextLevelExp(level);
+        const exp = this.randomInt(0, nextLevelExp - 1);
+        const userId = `local-dev-user-${Date.now()}-${this.randomInt(100, 999)}`;
+        const nickName = `${this.pickRandom(names)}${this.randomInt(10, 99)}`;
+
+        return {
+            id: userId,
+            userId,
+            nickName,
+            username: nickName,
+            avatarUrl: `https://api.dicebear.com/7.x/adventurer/png?seed=${encodeURIComponent(userId)}`,
+            rank: `${rankName} ${this.pickRandom(['I', 'II', 'III'])}`,
+            rankCode,
+            rankName,
+            rankIcon: this.getRankIconByCode(rankCode),
+            diamond: this.randomInt(20, 300),
+            gold: this.randomInt(2000, 20000),
+            level,
+            exp,
+            weeklyBattleGold: this.randomInt(1500, 18000),
+            isDevelopmentUser: true
+        };
+    }
+
+    private createDevelopmentDailyCheckInData(): DevelopmentDailyCheckInData {
+        const todayIndex = this.randomInt(1, 7);
+        const claimedDayCount = this.randomInt(0, todayIndex - 1);
+        const claimedDays = Array.from({ length: claimedDayCount }, (_, index) => index + 1);
+        const claimableDayIndex = this.getNextDevelopmentDailyCheckInClaimableDayIndex(claimedDays, todayIndex);
+        const rewards = [1, 2, 3, 4, 5, 6, 7].map(dayIndex => {
+            const rewardType = dayIndex % 3 === 0 ? 'DIAMOND' : 'GOLD';
+            return {
+                dayIndex,
+                rewardType,
+                rewardCount: rewardType === 'DIAMOND' ? this.randomInt(5, 25) : this.randomInt(80, 360),
+                claimed: claimedDays.indexOf(dayIndex) >= 0,
+                claimable: dayIndex === claimableDayIndex
+            };
+        });
+
+        return {
+            weekStartDate: this.getDevelopmentWeekStartDate(),
+            todayIndex,
+            todayClaimed: false,
+            userGold: this.userData.gold,
+            userDiamond: this.userData.diamond,
+            rewards
+        };
+    }
+
+    private getDevelopmentDailyCheckInClaimReward(data: DevelopmentDailyCheckInData): DevelopmentDailyCheckInReward | null {
+        const claimedDays = data.rewards
+            .filter(item => item.claimed)
+            .map(item => item.dayIndex);
+        const claimableDayIndex = this.getNextDevelopmentDailyCheckInClaimableDayIndex(claimedDays, data.todayIndex);
+        return data.rewards.find(item => item.dayIndex === claimableDayIndex) ?? null;
+    }
+
+    private getNextDevelopmentDailyCheckInClaimableDayIndex(claimedDays: number[], todayIndex: number): number {
+        for (let dayIndex = 1; dayIndex <= todayIndex; dayIndex++) {
+            if (claimedDays.indexOf(dayIndex) < 0) {
+                return dayIndex;
+            }
+        }
+        return 0;
+    }
+
+    private createDevelopmentLevelRewardData(): DevelopmentLevelRewardData {
+        const rewardLevels = Array.from({ length: 60 }, (_, index) => index + 1);
+        let hasClaimableReward = false;
+        const rewards = rewardLevels.map((level, index) => {
+            const reached = this.userData.level >= level;
+            const claimed = reached && Math.random() > 0.45;
+            const canClaim = reached && !claimed;
+            const rewardParts = this.getDevelopmentLevelRewardParts(level);
+            const primaryReward = rewardParts[0];
+            hasClaimableReward = hasClaimableReward || canClaim;
+            return {
+                id: 1000 + index + 1,
+                level,
+                rewardType: primaryReward.rewardType,
+                rewardCount: primaryReward.rewardCount,
+                rewards: rewardParts,
+                canClaim,
+                claimed
+            };
+        });
+
+        if (!hasClaimableReward) {
+            const reward = rewards.find(item => this.userData.level >= item.level);
+            if (reward) {
+                reward.claimed = false;
+                reward.canClaim = true;
+            }
+        }
+
+        return {
+            username: this.userData.username,
+            avatarUrl: this.userData.avatarUrl,
+            level: this.userData.level,
+            exp: this.userData.exp,
+            nextLevelExp: this.getDevelopmentNextLevelExp(this.userData.level),
+            rewards
+        };
+    }
+
+    private getDevelopmentNextLevelExp(level: number) {
+        return Math.max(100, level * 120);
+    }
+
+    private getDevelopmentLevelRewardParts(level: number): DevelopmentLevelRewardPart[] {
+        if (level <= 30) {
+            return [{
+                rewardType: 'GOLD',
+                rewardCount: this.interpolateRewardCount(level, 1, 30, 100, 500)
+            }];
+        }
+
+        return [
+            {
+                rewardType: 'GOLD',
+                rewardCount: this.interpolateRewardCount(level, 31, 60, 100, 500)
+            },
+            {
+                rewardType: 'DIAMOND',
+                rewardCount: this.interpolateRewardCount(level, 31, 60, 10, 100)
+            }
+        ];
+    }
+
+    private interpolateRewardCount(level: number, minLevel: number, maxLevel: number, minReward: number, maxReward: number) {
+        if (maxLevel <= minLevel) {
+            return maxReward;
+        }
+
+        const progress = Math.max(0, Math.min(1, (level - minLevel) / (maxLevel - minLevel)));
+        return Math.round(minReward + (maxReward - minReward) * progress);
+    }
+
+    private getDevelopmentWeekStartDate() {
+        const now = new Date();
+        const day = now.getDay() || 7;
+        const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - day + 1);
+        const month = monday.getMonth() + 1;
+        const date = monday.getDate();
+        return `${monday.getFullYear()}-${month < 10 ? `0${month}` : month}-${date < 10 ? `0${date}` : date}`;
+    }
+
+    private randomInt(min: number, max: number) {
+        return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    private pickRandom<T>(items: T[]): T {
+        return items[this.randomInt(0, items.length - 1)];
+    }
+
+    private cloneData<T>(data: T): T {
+        return JSON.parse(JSON.stringify(data));
+    }
+
+    private persistDevelopmentUserInfo() {
+        if (this.userData.isDevelopmentUser) {
+            this.saveDevelopmentLogin('local_dev_token', this.userData);
+        }
     }
 
     private applyLoggedInState(token: string, userInfo: any) {
@@ -239,6 +557,7 @@ export class DataManager {
             weeklyBattleGold: Number(userInfo.weeklyBattleGold ?? userInfo.weekly_battle_gold ?? 0),
             isDevelopmentUser: !!userInfo.isDevelopmentUser
         };
+        this.notifyUserDataChanged();
     }
 
     private getRankNameByCode(rankCode: string): string {
@@ -257,16 +576,16 @@ export class DataManager {
 
     private getRankIconByCode(rankCode: string): string {
         const rankIcons: Record<string, string> = {
-            BRONZE: 'rank/bronze',
-            SILVER: 'rank/silver',
-            GOLD: 'rank/gold',
-            PLATINUM: 'rank/platinum',
-            DIAMOND: 'rank/diamond',
-            STARSHINE: 'rank/starshine',
-            MASTER: 'rank/master',
-            KING: 'rank/king'
+            BRONZE: 'tool/rank/bronze',
+            SILVER: 'tool/rank/silver',
+            GOLD: 'tool/rank/gold',
+            PLATINUM: 'tool/rank/platinum',
+            DIAMOND: 'tool/rank/diamond',
+            STARSHINE: 'tool/rank/starshine',
+            MASTER: 'tool/rank/master',
+            KING: 'tool/rank/king'
         };
-        return rankIcons[rankCode] || 'rank/bronze';
+        return rankIcons[rankCode] || 'tool/rank/bronze';
     }
 
     private isDevelopmentEnvironment(): boolean {

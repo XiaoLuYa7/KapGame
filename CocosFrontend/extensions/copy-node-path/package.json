@@ -1,0 +1,20 @@
+{
+  "name": "copy-node-path",
+  "version": "1.0.0",
+  "description": "Copy selected node path in Cocos Creator",
+  "author": "lucky",
+  "main": "main.js",
+  "contributions": {
+    "menu": [
+      {
+        "path": "扩展/复制节点路径/复制选中节点路径",
+        "message": "copy-selected-node-path"
+      }
+    ],
+    "messages": {
+      "copy-selected-node-path": {
+        "methods": ["copySelectedNodePath"]
+      }
+    }
+  }
+}

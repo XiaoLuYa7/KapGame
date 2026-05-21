@@ -8,7 +8,9 @@ import java.util.Map;
 public class GameStateResponse {
     private Long gameId;
     private String status;
+    private String mode;
     private Integer currentTurn;
+    private Integer turnDirection;
     private Integer yourPlayerIndex;
     private List<PlayerInfo> players;
     private List<Integer> handCards; // card IDs
@@ -25,5 +27,6 @@ public class GameStateResponse {
         private Integer hp;
         private Boolean isAlive;
         private Integer handCount;
+        private Integer teamNo;
     }
 }

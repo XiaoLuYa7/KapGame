@@ -1,0 +1,16 @@
+{
+  "disable-packages": {
+    "/Users/lucky/Projects/personal/kap_game/CocosFrontend/extensions/cocos-mcp-v1": {
+      "7": {
+        "5-all": {
+          "name": "cocos-mcp-v1.7.5-all",
+          "time": 1779251172101
+        }
+      }
+    },
+    "/Users/lucky/Projects/personal/kap_game/CocosFrontend/extensions/copy-node-path": {
+      "name": "copy-node-path",
+      "time": 1779251240530
+    }
+  }
+}

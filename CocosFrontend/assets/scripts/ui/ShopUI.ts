@@ -55,36 +55,12 @@ export class ShopUI extends BaseUI {
     }
 
     onCleanup() {
-        this.unbindEvents();
-    }
-
-    // 绑定事件
-    private bindEvents() {
-        this.unbindEvents();
-
-        this.moduleButtons.forEach((button, index) => {
-            button.node.on(Button.EventType.CLICK, () => {
-                const module = this.modules[index];
-                if (module) {
-                    this.onModuleClick(module.id);
-                }
-            }, this);
-        });
-
-        if (this.settingsBtn) {
-            this.settingsBtn.node.on(Button.EventType.CLICK, this.onBack, this);
-        }
-    }
-
-    // 解绑事件
-    private unbindEvents() {
-        this.moduleButtons.forEach(button => button.node.targetOff(this));
-        this.settingsBtn?.node.off(Button.EventType.CLICK, this.onBack, this);
     }
 
     // 处理模块点击
-    onModuleClick(moduleId: number) {
-        const module = this.modules.find(m => m.id === moduleId);
+    onModuleClick(eventOrModuleId?: any, customEventData?: string) {
+        const parsedId = Number(customEventData ?? eventOrModuleId);
+        const module = this.modules.find(m => m.id === parsedId);
         if (!module) return;
 
         console.log('[ShopUI] Module clicked:', module.name);
@@ -100,7 +76,6 @@ export class ShopUI extends BaseUI {
     refresh() {
         console.log('[ShopUI] Refreshing shop data...');
         this.resolvePrefabNodes();
-        this.bindEvents();
     }
 
     private resolvePrefabNodes() {

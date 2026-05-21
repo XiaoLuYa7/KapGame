@@ -4,6 +4,7 @@ import com.beiguo.dto.GameStartResponse;
 import com.beiguo.dto.GameStateResponse;
 import com.beiguo.engine.GameContext;
 import com.beiguo.engine.GameEngine;
+import com.beiguo.engine.MischiefModeKeys;
 import com.beiguo.entity.Game;
 import com.beiguo.entity.Player;
 import com.beiguo.entity.User;
@@ -45,12 +46,22 @@ public class GameServiceImpl implements GameService {
     @Override
     @Transactional
     public GameStartResponse startGame() {
+        return startGame(MischiefModeKeys.SOLO);
+    }
+
+    @Override
+    @Transactional
+    public GameStartResponse startGame(String modeKey) {
+        String mode = MischiefModeKeys.TEAM.equalsIgnoreCase(modeKey) ? MischiefModeKeys.TEAM : MischiefModeKeys.SOLO;
         User currentUser = userService.getCurrentUser();
         logger.info("开始创建新游戏，当前用户ID: {}, 用户名: {}", currentUser.getId(), currentUser.getUsername());
 
         // 创建游戏
         Game game = new Game();
         game.setStatus("WAITING");
+        game.setGameMode(mode);
+        game.setModeConfigKey(mode);
+        game.setMaxPlayers(MischiefModeKeys.TEAM.equals(mode) ? 6 : 5);
         game = gameRepository.save(game);
         logger.info("游戏创建成功，游戏ID: {}, 状态: {}", game.getId(), game.getStatus());
 
@@ -67,8 +78,8 @@ public class GameServiceImpl implements GameService {
         logger.debug("人类玩家创建成功，玩家ID: {}, 用户ID: {}, 玩家索引: {}",
             humanPlayer.getId(), currentUser.getId(), humanPlayer.getPlayerIndex());
 
-        // 创建AI玩家（2-3个）
-        int aiCount = new Random().nextInt(2) + 2; // 2-3个AI
+        // 创建AI玩家，补足当前模式人数
+        int aiCount = game.getMaxPlayers() - 1;
         List<Player> aiPlayers = new ArrayList<>();
         for (int i = 1; i <= aiCount; i++) {
             Player aiPlayer = new Player();
@@ -102,7 +113,7 @@ public class GameServiceImpl implements GameService {
         gameRepository.save(game);
 
         logger.info("游戏启动完成，游戏ID: {}, 总玩家数: {}", game.getId(), allPlayers.size());
-        return new GameStartResponse(game.getId(), allPlayers.size(), 0);
+        return new GameStartResponse(game.getId(), allPlayers.size(), 0, mode, humanPlayer.getTeamNo());
     }
 
     @Override
@@ -128,7 +139,9 @@ public class GameServiceImpl implements GameService {
         GameStateResponse response = new GameStateResponse();
         response.setGameId(gameId);
         response.setStatus(game.getStatus());
+        response.setMode(game.getModeConfigKey() != null ? game.getModeConfigKey() : game.getGameMode());
         response.setCurrentTurn(game.getCurrentTurn());
+        response.setTurnDirection(game.getTurnDirection());
         response.setYourPlayerIndex(currentPlayer.getPlayerIndex());
 
         // 构建玩家信息
@@ -139,6 +152,7 @@ public class GameServiceImpl implements GameService {
             info.setIsAi(player.getIsAi());
             info.setHp(player.getHp());
             info.setIsAlive(player.getIsAlive());
+            info.setTeamNo(player.getTeamNo());
 
             if (player.getUser() != null) {
                 info.setUsername(player.getUser().getUsername());

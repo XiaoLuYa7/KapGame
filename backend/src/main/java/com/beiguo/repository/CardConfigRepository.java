@@ -20,6 +20,7 @@ public interface CardConfigRepository extends JpaRepository<CardConfig, Integer>
     List<CardConfig> findByManaCostBetween(Integer minMana, Integer maxMana);
     List<CardConfig> findByNameContaining(String name);
     Optional<CardConfig> findByName(String name);
+    Optional<CardConfig> findByCardKey(String cardKey);
     Integer countByType(String type);
     Integer countByRarity(String rarity);
     Integer countByManaCost(Integer manaCost);

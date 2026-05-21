@@ -26,6 +26,9 @@ public class Player {
     @Column(name = "player_index", nullable = false)
     private Integer playerIndex;
 
+    @Column(name = "team_no")
+    private Integer teamNo;
+
     @Column(nullable = false)
     private Integer hp = 3;
 
@@ -34,6 +37,9 @@ public class Player {
 
     @Column(name = "is_alive", nullable = false)
     private Boolean isAlive = true;
+
+    @Column(name = "eliminated_order")
+    private Integer eliminatedOrder;
 
     @Column(name = "create_time")
     private LocalDateTime createTime;

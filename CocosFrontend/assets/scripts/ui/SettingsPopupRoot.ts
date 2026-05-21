@@ -33,7 +33,12 @@ export class SettingsPopupRoot extends BaseUI {
     @property(Node)
     realNameLayer: Node | null = null;
 
-    @property(Sprite)
+    @property(Node)
+    phoneNode: Node | null = null;
+
+    @property(Node)
+    realNameNode: Node | null = null;
+
     settingsBackgroundSprite: Sprite | null = null;
 
     @property(Button)
@@ -50,6 +55,15 @@ export class SettingsPopupRoot extends BaseUI {
 
     @property(Button)
     realNameCloseBtn: Button | null = null;
+
+    @property(Button)
+    sendCodeBtn: Button | null = null;
+
+    @property(Button)
+    savePhoneBtn: Button | null = null;
+
+    @property(Button)
+    saveRealNameBtn: Button | null = null;
 
     @property(EditBox)
     editPhoneBox: EditBox | null = null;
@@ -78,6 +92,7 @@ export class SettingsPopupRoot extends BaseUI {
         super.onInit();
         this.log('onInit');
         this.resolveNodes();
+        this.bindRuntimeEvents();
         this.hideSettingsPopup();
         this.hidePrivacyPolicy();
         this.hideUserAgreement();
@@ -87,7 +102,9 @@ export class SettingsPopupRoot extends BaseUI {
 
     showSettingsPopup() {
         this.log('showSettingsPopup');
+        this.node.active = true;
         this.resolveNodes();
+        this.bindRuntimeEvents();
         this.setSettingsBackgroundSpriteEnabled(true);
         this.setSettingsLayerInputEnabled(true);
         this.showLayer(this.settingsPopupLayer, 'SettingsPopupLayer', false);
@@ -359,6 +376,8 @@ export class SettingsPopupRoot extends BaseUI {
             'SettingsPopupLayer/Background'
         ], Sprite);
 
+        this.phoneNode ??= this.findNodeByPaths(['PhoneNode'], this.node);
+        this.realNameNode ??= this.findNodeByPaths(['RealNameNode'], this.node);
         this.settingsCloseBtn ??= this.findComponentByPaths(['SettingsPopupLayer/CloseButton'], Button);
         this.privacyPolicyBtn ??= this.findComponentByPaths([
             'SettingsPopupLayer/PopupPanel/PoliciesAgreementsPanel/PoliciesButton'
@@ -368,6 +387,19 @@ export class SettingsPopupRoot extends BaseUI {
         ], Button);
         this.bindPhoneCloseBtn ??= this.findComponentByPaths(['BindPhoneLayer/CloseButton'], Button);
         this.realNameCloseBtn ??= this.findComponentByPaths(['RealNameLayer/CloseButton'], Button);
+        this.sendCodeBtn ??= this.findComponentByPaths([
+            'BindPhoneLayer/PopupPanel/ContentPanel/CodeButton',
+            'BindPhoneLayer/CodeButton',
+            'CodeButton'
+        ], Button);
+        this.savePhoneBtn ??= this.findComponentByPaths([
+            'BindPhoneLayer/PopupPanel/ContentPanel/SaveButton',
+            'BindPhoneLayer/SaveButton'
+        ], Button);
+        this.saveRealNameBtn ??= this.findComponentByPaths([
+            'RealNameLayer/PopupPanel/ContentPanel/SaveButton',
+            'RealNameLayer/SaveButton'
+        ], Button);
         this.editPhoneBox ??= this.findComponentByPaths([
             'BindPhoneLayer/PopupPanel/EditPhoneBox',
             'BindPhoneLayer/PopupPanel/ContentPanel/EditPhoneBox',
@@ -382,6 +414,8 @@ export class SettingsPopupRoot extends BaseUI {
         ], EditBox);
         this.realNameEditBox ??= this.findComponentByPaths([
             'RealNameLayer/PopupPanel/ContentPanel/PhoneNode/EditINameBox',
+            'RealNameLayer/PopupPanel/ContentPanel/RealNameNode/EditRealNameBox',
+            'RealNameLayer/PopupPanel/ContentPanel/EditRealNameBox',
             'RealNameLayer/PopupPanel/ContentPanel/EditINameBox',
             'RealNameLayer/PopupPanel/EditINameBox',
             'RealNameLayer/EditINameBox',
@@ -407,6 +441,34 @@ export class SettingsPopupRoot extends BaseUI {
         this.vibrationToggle ??= this.findComponentByPaths([
             'SettingsPopupLayer/PopupPanel/SoundVibrationPanel/Radio-001/VibrationToggle/VibrationToggle'
         ], Toggle);
+    }
+
+    private bindRuntimeEvents() {
+        this.bindButtonNode(this.settingsCloseBtn?.node, () => this.onSettingsCloseButtonClick());
+        this.bindButtonNode(this.privacyPolicyBtn?.node, () => this.onPrivacyPolicyClick());
+        this.bindButtonNode(this.userAgreementBtn?.node, () => this.onUserAgreementClick());
+        this.bindButtonNode(this.phoneNode, () => this.onPhoneNodeClick());
+        this.bindButtonNode(this.realNameNode, () => this.onRealNameNodeClick());
+        this.bindButtonNode(this.bindPhoneCloseBtn?.node, () => this.onBindPhoneCloseButtonClick());
+        this.bindButtonNode(this.realNameCloseBtn?.node, () => this.onRealNameCloseButtonClick());
+        this.bindButtonNode(this.sendCodeBtn?.node, () => this.onSendCodeButtonClick());
+        this.bindButtonNode(this.savePhoneBtn?.node, () => void this.onSavePhoneButtonClick());
+        this.bindButtonNode(this.saveRealNameBtn?.node, () => void this.onSaveRealNameButtonClick());
+    }
+
+    private bindButtonNode(node: Node | null | undefined, callback: () => void) {
+        if (!node?.isValid) {
+            return;
+        }
+
+        const button = node.getComponent(Button);
+        node.targetOff(this);
+        if (button) {
+            button.clickEvents = [];
+            node.on(Button.EventType.CLICK, callback, this);
+        } else {
+            node.on(Node.EventType.TOUCH_END, callback, this);
+        }
     }
 
     private showLayer(layer: Node | null, name: string, prepareScrollView: boolean) {

@@ -16,9 +16,9 @@ public class GameController {
     private GameService gameService;
 
     @PostMapping("/start")
-    public ApiResponse<GameStartResponse> startGame() {
+    public ApiResponse<GameStartResponse> startGame(@RequestParam(required = false, defaultValue = "SOLO") String mode) {
         try {
-            GameStartResponse response = gameService.startGame();
+            GameStartResponse response = gameService.startGame(mode);
             return ApiResponse.success("游戏开始", response);
         } catch (RuntimeException e) {
             return ApiResponse.error(e.getMessage());

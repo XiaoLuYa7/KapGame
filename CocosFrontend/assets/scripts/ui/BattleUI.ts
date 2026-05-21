@@ -56,16 +56,12 @@ export class BattleUI extends BaseUI {
         // 刷新游戏状态
         this.refreshGameState();
 
-        // 绑定事件
-        this.bindEvents();
-
         // 更新 UI
         this.updateUI();
     }
 
     onExit() {
         console.log('[BattleUI] Battle exited');
-        this.unbindEvents();
     }
 
     // 刷新游戏状态
@@ -74,32 +70,6 @@ export class BattleUI extends BaseUI {
 
         if (!this.gameState) {
             console.warn('[BattleUI] No game state found');
-        }
-    }
-
-    // 绑定事件
-    private bindEvents() {
-        if (this.playCardBtn) {
-            this.playCardBtn.node.on(Button.EventType.CLICK, this.onPlayCard, this);
-        }
-        if (this.drawCardBtn) {
-            this.drawCardBtn.node.on(Button.EventType.CLICK, this.onDrawCard, this);
-        }
-        if (this.backBtn) {
-            this.backBtn.node.on(Button.EventType.CLICK, this.onBackToLobby, this);
-        }
-    }
-
-    // 解绑事件
-    private unbindEvents() {
-        if (this.playCardBtn) {
-            this.playCardBtn.node.off(Button.EventType.CLICK, this.onPlayCard, this);
-        }
-        if (this.drawCardBtn) {
-            this.drawCardBtn.node.off(Button.EventType.CLICK, this.onDrawCard, this);
-        }
-        if (this.backBtn) {
-            this.backBtn.node.off(Button.EventType.CLICK, this.onBackToLobby, this);
         }
     }
 

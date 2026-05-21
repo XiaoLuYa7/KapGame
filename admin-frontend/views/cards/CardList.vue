@@ -30,28 +30,15 @@
             <el-tag :type="getRarityType(row.rarity)">{{ row.rarity }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="manaCost" label="费用" width="80">
+        <el-table-column prop="timing" label="使用时机" width="130" />
+        <el-table-column prop="targetType" label="目标" width="120" />
+        <el-table-column prop="countSolo" label="单人数量" width="100" />
+        <el-table-column prop="countTeam" label="双人数量" width="100" />
+        <el-table-column prop="canBeCountered" label="可反制" width="90">
           <template #default="{ row }">
-            <div class="stat-cell mana">
-              <el-icon><MagicStick /></el-icon>
-              {{ row.manaCost }}
-            </div>
-          </template>
-        </el-table-column>
-        <el-table-column prop="power" label="攻击力" width="100">
-          <template #default="{ row }">
-            <div class="stat-cell attack">
-              <el-icon><Aim /></el-icon>
-              {{ row.power }}
-            </div>
-          </template>
-        </el-table-column>
-        <el-table-column prop="health" label="生命值" width="100">
-          <template #default="{ row }">
-            <div class="stat-cell health">
-              <el-icon><Star /></el-icon>
-              {{ row.health }}
-            </div>
+            <el-tag :type="row.canBeCountered ? 'warning' : 'info'" effect="light">
+              {{ row.canBeCountered ? '是' : '否' }}
+            </el-tag>
           </template>
         </el-table-column>
         <el-table-column label="状态" width="100">
@@ -99,7 +86,7 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus, Edit, Delete, Promotion, MagicStick, Aim, Star } from '@element-plus/icons-vue'
+import { Plus, Edit, Delete, Promotion } from '@element-plus/icons-vue'
 import { getCards, publishCard as publishCardApi, deleteCard as deleteCardApi } from '@/apis/cards'
 import { hasFunctionPermission } from '@/utils/permission'
 

@@ -52,42 +52,13 @@ export class LobbyUI extends BaseUI {
             this.rankLabel.string = dataManager.userData.rank;
         }
 
-        this.bindEvents();
     }
 
     onExit() {
         console.log('[LobbyUI] Lobby exited');
-        this.unbindEvents();
     }
 
     onCleanup() {
-        this.unbindEvents();
-    }
-
-    // 绑定事件
-    private bindEvents() {
-        if (this.rankMatchBtn) {
-            this.rankMatchBtn.node.on(Button.EventType.CLICK, this.onStartMatch, this);
-        }
-        if (this.casualBtn) {
-            this.casualBtn.node.on(Button.EventType.CLICK, this.onCasualMode, this);
-        }
-        if (this.backBtn) {
-            this.backBtn.node.on(Button.EventType.CLICK, this.onBack, this);
-        }
-    }
-
-    // 解绑事件
-    private unbindEvents() {
-        if (this.rankMatchBtn) {
-            this.rankMatchBtn.node.off(Button.EventType.CLICK, this.onStartMatch, this);
-        }
-        if (this.casualBtn) {
-            this.casualBtn.node.off(Button.EventType.CLICK, this.onCasualMode, this);
-        }
-        if (this.backBtn) {
-            this.backBtn.node.off(Button.EventType.CLICK, this.onBack, this);
-        }
     }
 
     // 开始匹配（排位赛）

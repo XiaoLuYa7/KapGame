@@ -5,10 +5,10 @@ import {
     Label,
     Layout,
     Node,
-    resources,
     ScrollView,
-    Sprite,
-    SpriteFrame,
+    tween,
+    Tween,
+    Vec3,
     UITransform
 } from 'cc';
 import { BaseUI } from './BaseUI';
@@ -19,13 +19,7 @@ declare const wx: any;
 
 const { ccclass, property } = _decorator;
 
-interface RankInfo {
-    rankCode: string;
-    rankName: string;
-    rankIcon: string;
-}
-
-interface RankingUserItem {
+interface LastWeekRankingUserItem {
     userId: number | string;
     nickname: string;
     avatarUrl?: string;
@@ -33,24 +27,17 @@ interface RankingUserItem {
     weeklyBattleGold: number;
 }
 
-interface WeeklyRankData {
-    rankInfo: RankInfo;
+interface LastWeekRankingData {
     groupInfo: {
         groupId: number | string;
         memberCount: number;
         settleTime: string;
     };
-    rankingList: RankingUserItem[];
+    rankingList: LastWeekRankingUserItem[];
 }
 
 @ccclass('LastWeekRankingPopupLayer')
 export class LastWeekRankingPopupLayer extends BaseUI {
-    @property(Sprite)
-    rankSprite: Sprite | null = null;
-
-    @property(Label)
-    rankLabel: Label | null = null;
-
     @property(ScrollView)
     scrollView: ScrollView | null = null;
 
@@ -64,55 +51,120 @@ export class LastWeekRankingPopupLayer extends BaseUI {
     excisionNodeTemplate: Node | null = null;
 
     @property(Node)
-    currentUserItem: Node | null = null;
-
-    @property(Node)
-    shareSprite: Node | null = null;
-
-    @property(Node)
-    chatSprite: Node | null = null;
-
-    @property(Node)
     closeButton: Node | null = null;
 
-    private cachedRankingData: WeeklyRankData | null = null;
-    private loadingTask: Promise<void> | null = null;
-    private readonly rankRewards = [50, 30, 10];
-    private readonly promotionCutoffRatio = 0.2;
-    private readonly retentionCutoffRatio = 0.6;
+    private cachedRankingData: LastWeekRankingData | null = null;
+    private loadingTask: Promise<LastWeekRankingData> | null = null;
+    private currentUserRankNo = 0;
+    private prepared = false;
+    private preparingTask: Promise<void> | null = null;
+    private closeCallbacks: Array<() => void> = [];
+    private closeButtonDefaultScale: Vec3 | null = null;
 
     protected onInit() {
         this.resolveNodes();
-        this.bindButtonEvents();
         if (this.userItemTemplate) {
             this.userItemTemplate.active = false;
         }
         if (this.excisionNodeTemplate) {
             this.excisionNodeTemplate.active = false;
         }
-        if (this.currentUserItem) {
-            this.currentUserItem.active = false;
+        this.bindRuntimeEvents();
+    }
+
+    async openAsWeeklyFirstLoginPopup() {
+        await this.open();
+    }
+
+    async preload(): Promise<LastWeekRankingData | null> {
+        this.resolveNodes();
+        if (this.cachedRankingData && this.prepared) {
+            return this.cachedRankingData;
+        }
+        await this.prepareContent();
+        return this.cachedRankingData;
+    }
+
+    private async prepareContent() {
+        if (this.prepared) {
+            return;
+        }
+        if (this.preparingTask) {
+            await this.preparingTask;
+            return;
+        }
+
+        const task = this.doPrepareContent();
+        this.preparingTask = task;
+        try {
+            await task;
+        } finally {
+            if (this.preparingTask === task) {
+                this.preparingTask = null;
+            }
         }
     }
 
-    openLastWeekRankingPopup() {
-        void this.open();
+    private async doPrepareContent() {
+        const data = await this.ensureRankingData();
+        this.refreshRankingList(data.rankingList);
+        this.prepared = true;
     }
 
     async open() {
         this.resolveNodes();
-        this.bindButtonEvents();
+        this.bindRuntimeEvents();
+        await this.prepareContent();
         this.node.active = true;
         this.node.setSiblingIndex(this.node.parent ? this.node.parent.children.length - 1 : this.node.getSiblingIndex());
+    }
+
+    close() {
+        this.node.active = false;
+        const callbacks = [...this.closeCallbacks];
+        this.closeCallbacks = [];
+        callbacks.forEach((callback) => callback());
+    }
+
+    onClosedOnce(callback: () => void) {
+        this.closeCallbacks.push(callback);
+    }
+
+    onClickShare() {
+        const shareTitle = this.currentUserRankNo > 0
+            ? `我上周排名第${this.currentUserRankNo}名，快来挑战我！`
+            : '我上周进入排行榜，快来挑战我！';
+        if (typeof wx !== 'undefined' && wx.shareAppMessage) {
+            wx.shareAppMessage({
+                title: shareTitle,
+                imageUrl: '',
+                query: ''
+            });
+            return;
+        }
+
+        console.log(`[LastWeekRankingPopupLayer] 分享上周排名: ${shareTitle}`);
+    }
+
+    private async loadRankingData(): Promise<LastWeekRankingData> {
+        const data = await this.fetchRankingData();
+        this.cachedRankingData = data;
+        this.prepared = false;
+        return data;
+    }
+
+    private async ensureRankingData(): Promise<LastWeekRankingData> {
         if (this.cachedRankingData) {
-            this.refreshRankingData(this.cachedRankingData);
+            return this.cachedRankingData;
         }
-        if (!this.loadingTask) {
-            this.loadingTask = this.loadRankingData();
+        if (this.loadingTask) {
+            return this.loadingTask;
         }
-        const task = this.loadingTask;
+
+        const task = this.loadRankingData();
+        this.loadingTask = task;
         try {
-            await task;
+            return await task;
         } finally {
             if (this.loadingTask === task) {
                 this.loadingTask = null;
@@ -120,58 +172,25 @@ export class LastWeekRankingPopupLayer extends BaseUI {
         }
     }
 
-    close() {
-        this.node.active = false;
-    }
-
-    onClickShare() {
-        if (typeof wx !== 'undefined' && wx.shareAppMessage) {
-            wx.shareAppMessage({
-                title: '我正在参加段位周排行，快来挑战我！',
-                imageUrl: '',
-                query: ''
-            });
-            return;
+    private async fetchRankingData(): Promise<LastWeekRankingData> {
+        if (this.isDevelopmentEnvironment()) {
+            return this.getMockRankingData();
         }
 
-        console.log('[LastWeekRankingPopupLayer] 当前不是微信环境，跳过分享');
-    }
-
-    onClickChat() {
-        console.log('[LastWeekRankingPopupLayer] 进入段位分组聊天页面，功能暂未完成');
-    }
-
-    async loadRankingData() {
-        const data = await this.fetchRankingData();
-        this.cachedRankingData = data;
-        this.refreshRankingData(data);
-    }
-
-    refreshRankingData(data: WeeklyRankData) {
-        this.refreshRankInfo(data.rankInfo);
-        this.refreshRankingList(data.rankingList);
-    }
-
-    refreshRankInfo(rankInfo: RankInfo) {
-        this.resolveNodes();
-
-        if (this.rankLabel) {
-            this.rankLabel.string = `${rankInfo.rankName}组`;
-        }
-
-        if (!this.rankSprite) {
-            console.warn('[LastWeekRankingPopupLayer] rankSprite 未绑定');
-            return;
-        }
-
-        this.loadFirstAvailableSpriteFrame(this.getRankIconCandidatePaths(rankInfo.rankIcon), (spriteFrame) => {
-            if (this.rankSprite) {
-                this.rankSprite.spriteFrame = spriteFrame;
+        try {
+            const data = await Http.get<LastWeekRankingData>('/rank/weekly/last');
+            if (this.isValidLastWeekRankingData(data)) {
+                return data;
             }
-        });
+            console.warn('[LastWeekRankingPopupLayer] last week ranking API data invalid, use mock');
+        } catch (error) {
+            console.warn('[LastWeekRankingPopupLayer] load last week ranking failed, use mock:', error);
+        }
+
+        return this.getMockRankingData();
     }
 
-    refreshRankingList(list: RankingUserItem[]) {
+    private refreshRankingList(list: LastWeekRankingUserItem[]) {
         this.resolveNodes();
 
         if (!this.content || !this.userItemTemplate) {
@@ -186,49 +205,34 @@ export class LastWeekRankingPopupLayer extends BaseUI {
         this.clearGeneratedItems();
 
         const sortedList = [...list].sort((a, b) => b.weeklyBattleGold - a.weeklyBattleGold);
-        const currentGold = this.getCurrentUserWeeklyGold(sortedList);
-        const promotionRankNo = this.getCutoffRankNo(sortedList.length, this.promotionCutoffRatio);
-        const retentionRankNo = this.getCutoffRankNo(sortedList.length, this.retentionCutoffRatio);
+        const currentUser = this.getCurrentRankingUserItem(sortedList);
+        const displayList = sortedList.some((item) => String(item.userId) === String(currentUser.userId))
+            ? sortedList
+            : this.insertCurrentUserItem(sortedList, currentUser);
+        this.currentUserRankNo = currentUser.rankNo;
 
-        sortedList.forEach((item, index) => {
+        displayList.forEach((item, index) => {
             const rankNo = index + 1;
             const userItem = instantiate(this.userItemTemplate!);
-            userItem.name = `RankingUserItem_${rankNo}`;
+            userItem.name = `LastWeekRankingUserItem_${rankNo}`;
             userItem.active = true;
             this.content!.addChild(userItem);
             this.refreshUserItem(userItem, item, rankNo);
 
-            if (rankNo === promotionRankNo) {
-                this.addExcisionNode('promotion', item.weeklyBattleGold, currentGold);
-            }
-            if (rankNo === retentionRankNo && retentionRankNo !== promotionRankNo) {
-                this.addExcisionNode('retention', item.weeklyBattleGold, currentGold);
+            if (String(item.userId) === String(currentUser.userId)) {
+                this.addCurrentUserMarker();
             }
         });
 
         this.updateContentHeight();
-        this.refreshCurrentUserItem(sortedList);
     }
 
-    refreshUserItem(userItem: Node, item: RankingUserItem, rankNo: number) {
-        const rankSpriteNode = userItem.getChildByPath('RankNode/RankSprite')
-            ?? userItem.getChildByPath('RankSprite')
-            ?? userItem.getChildByPath('UserNode/RankNode/RankSprite')
-            ?? userItem.getChildByPath('UserNode/RankSprite');
-        const rankLabelNode = userItem.getChildByPath('RankNode/RankLabel')
-            ?? userItem.getChildByPath('RankLabel')
-            ?? userItem.getChildByPath('UserNode/RankNode/RankLabel')
-            ?? userItem.getChildByPath('UserNode/RankLabel');
-        const rankSprite = rankSpriteNode?.getComponent(Sprite) ?? null;
+    private refreshUserItem(userItem: Node, item: LastWeekRankingUserItem, rankNo: number) {
+        const rankSpriteNode = userItem.getChildByPath('RankNode/RankSprite') ?? userItem.getChildByPath('RankSprite');
+        const rankLabelNode = userItem.getChildByPath('RankNode/RankLabel') ?? userItem.getChildByPath('RankLabel');
         const rankLabel = rankLabelNode?.getComponent(Label) ?? null;
 
-        if (!rankSpriteNode || !rankLabelNode || !rankSprite || !rankLabel) {
-            console.warn('[LastWeekRankingPopupLayer] UserItem 排名节点未绑定完整');
-        } else if (rankNo <= 3) {
-            rankSpriteNode.active = true;
-            rankLabelNode.active = false;
-            this.loadRankTagSprite(rankNo, rankSprite);
-        } else {
+        if (rankSpriteNode && rankLabelNode && rankLabel) {
             rankSpriteNode.active = false;
             rankLabelNode.active = true;
             rankLabel.string = String(rankNo);
@@ -237,132 +241,37 @@ export class LastWeekRankingPopupLayer extends BaseUI {
         this.setLabelText(userItem, [
             'NameLabel',
             'NicknameLabel',
-            'UserNameLabel',
-            'UserNode/NameLabel',
-            'UserNode/NicknameLabel'
+            'UserNameLabel'
         ], item.nickname);
 
         this.setLabelText(userItem, [
             'GoldAndRewardNode/GoldNode/CountLabel',
             'GoldNode/CountLabel',
-            'UserNode/GoldAndRewardNode/GoldNode/CountLabel',
-            'UserNode/GoldNode/CountLabel',
             'WeeklyBattleGoldLabel',
             'BattleGoldLabel',
             'GoldLabel',
             'CoinLabel',
             'CountLabel'
         ], String(item.weeklyBattleGold));
-
-        const rewardNode = userItem.getChildByPath('GoldAndRewardNode/RewardNode')
-            ?? userItem.getChildByPath('RewardNode')
-            ?? userItem.getChildByPath('UserNode/GoldAndRewardNode/RewardNode')
-            ?? userItem.getChildByPath('UserNode/RewardNode');
-        const reward = this.getRankReward(rankNo);
-        if (rewardNode) {
-            rewardNode.active = reward > 0;
-            if (reward > 0) {
-                this.setLabelText(userItem, [
-                    'GoldAndRewardNode/RewardNode/CountLabel',
-                    'RewardNode/CountLabel',
-                    'UserNode/GoldAndRewardNode/RewardNode/CountLabel',
-                    'UserNode/RewardNode/CountLabel'
-                ], String(reward));
-            }
-        }
     }
 
-    private async fetchRankingData(): Promise<WeeklyRankData> {
-        if (this.isDevelopmentEnvironment()) {
-            return this.getMockRankingData();
+    private addCurrentUserMarker() {
+        if (!this.content || !this.excisionNodeTemplate) {
+            return;
         }
 
-        try {
-            const data = await Http.get<WeeklyRankData>('/rank/weekly/current');
-            if (this.isValidWeeklyRankData(data)) {
-                return data;
-            }
-            console.warn('[LastWeekRankingPopupLayer] weekly rank API data invalid, use mock');
-        } catch (error) {
-            console.warn('[LastWeekRankingPopupLayer] load weekly rank failed, use mock:', error);
-        }
-
-        return this.getMockRankingData();
+        const excisionNode = instantiate(this.excisionNodeTemplate);
+        excisionNode.name = 'GeneratedExcisionNode_CurrentUser';
+        excisionNode.active = true;
+        this.setLabelText(excisionNode, ['BeforeLabel'], '您在这里');
+        this.setLabelText(excisionNode, ['NeedCountLabel'], '');
+        this.setLabelText(excisionNode, ['AfterLabel'], '');
+        this.content.addChild(excisionNode);
     }
 
-    private getMockRankingData(): WeeklyRankData {
-        const names = [
-            '玩家A', '玩家B', '玩家C', '玩家D', '玩家E', '玩家F', '玩家G', '玩家H', '玩家I', '玩家J',
-            '玩家K', '玩家L', '玩家M', '玩家N', '玩家O', '玩家P', '玩家Q', '玩家R', '玩家S', '玩家T',
-            '玩家U', '玩家V', '玩家W', '玩家X', '玩家Y', '玩家Z', '玩家AA', '玩家AB', '玩家AC', '玩家AD'
-        ];
-
-        return {
-            rankInfo: {
-                rankCode: dataManager.userData.rankCode || 'BRONZE',
-                rankName: dataManager.userData.rankName || '青铜',
-                rankIcon: dataManager.userData.rankIcon || 'rank/bronze'
-            },
-            groupInfo: {
-                groupId: 10001,
-                memberCount: 30,
-                settleTime: '2026-05-10 20:00:00'
-            },
-            rankingList: names.map((nickname, index) => ({
-                userId: index === 0 ? dataManager.userData.userId || 1 : index + 1,
-                nickname: index === 0 ? dataManager.userData.username || nickname : nickname,
-                avatarUrl: index === 0 ? dataManager.userData.avatarUrl : '',
-                rankNo: index + 1,
-                weeklyBattleGold: index === 0
-                    ? dataManager.userData.weeklyBattleGold || 12800
-                    : Math.max(800, 12800 - index * 420 - (index % 4) * 130)
-            }))
-        };
-    }
-
-    private isValidWeeklyRankData(data: WeeklyRankData | null | undefined): data is WeeklyRankData {
-        return !!data
-            && !!data.rankInfo
-            && typeof data.rankInfo.rankName === 'string'
-            && typeof data.rankInfo.rankIcon === 'string'
-            && Array.isArray(data.rankingList);
-    }
-
-    private loadRankTagSprite(rankNo: number, sprite: Sprite) {
-        const paths = rankNo === 1
-            ? ['tool/first_tag']
-            : rankNo === 2
-                ? ['tool/second_tag', 'tool/second_atg']
-                : ['tool/three_tag'];
-
-        this.loadFirstAvailableSpriteFrame(paths, (spriteFrame) => {
-            sprite.spriteFrame = spriteFrame;
-        });
-    }
-
-    private getRankReward(rankNo: number) {
-        return this.rankRewards[rankNo - 1] ?? 0;
-    }
-
-    private getCutoffRankNo(totalCount: number, ratio: number) {
-        if (totalCount <= 0) {
-            return 0;
-        }
-
-        return Math.max(1, Math.min(totalCount, Math.ceil(totalCount * ratio)));
-    }
-
-    private getCurrentUserWeeklyGold(list: RankingUserItem[]) {
-        const currentUser = this.getCurrentRankingUserItem(list);
-
-        return Number(currentUser?.weeklyBattleGold ?? dataManager.userData.weeklyBattleGold ?? 0);
-    }
-
-    private getCurrentRankingUserItem(list: RankingUserItem[]): RankingUserItem {
-        const currentUserId = dataManager.userData.userId;
-        const currentUserIndex = currentUserId === undefined || currentUserId === null
-            ? -1
-            : list.findIndex((item) => String(item.userId) === String(currentUserId));
+    private getCurrentRankingUserItem(list: LastWeekRankingUserItem[]): LastWeekRankingUserItem {
+        const currentUserId = dataManager.userData.userId || 'local-current-user';
+        const currentUserIndex = list.findIndex((item) => String(item.userId) === String(currentUserId));
         if (currentUserIndex >= 0) {
             return {
                 ...list[currentUserIndex],
@@ -372,7 +281,7 @@ export class LastWeekRankingPopupLayer extends BaseUI {
 
         const weeklyBattleGold = Number(dataManager.userData.weeklyBattleGold ?? 0);
         return {
-            userId: currentUserId || 'local-current-user',
+            userId: currentUserId,
             nickname: dataManager.userData.nickName || dataManager.userData.username || '当前用户',
             avatarUrl: dataManager.userData.avatarUrl,
             rankNo: this.getRankNoByGold(list, weeklyBattleGold),
@@ -380,119 +289,52 @@ export class LastWeekRankingPopupLayer extends BaseUI {
         };
     }
 
-    private refreshCurrentUserItem(sortedList: RankingUserItem[]) {
-        if (!this.currentUserItem) {
-            return;
-        }
-
-        const currentUser = this.getCurrentRankingUserItem(sortedList);
-        this.currentUserItem.active = true;
-        this.refreshUserItem(this.currentUserItem, currentUser, currentUser.rankNo);
-        this.refreshCurrentUserRankStatus(sortedList, currentUser);
-    }
-
-    private getRankNoByGold(sortedList: RankingUserItem[], weeklyBattleGold: number) {
+    private getRankNoByGold(sortedList: LastWeekRankingUserItem[], weeklyBattleGold: number) {
         return sortedList.filter((item) => Number(item.weeklyBattleGold) > weeklyBattleGold).length + 1;
     }
 
-    private refreshCurrentUserRankStatus(sortedList: RankingUserItem[], currentUser: RankingUserItem) {
-        if (!this.currentUserItem) {
-            return;
-        }
-
-        const rewardNode = this.currentUserItem.getChildByPath('GoldAndRewardNode/RewardNode')
-            ?? this.currentUserItem.getChildByPath('RewardNode')
-            ?? this.currentUserItem.getChildByPath('UserNode/GoldAndRewardNode/RewardNode')
-            ?? this.currentUserItem.getChildByPath('UserNode/RewardNode');
-        if (!rewardNode) {
-            return;
-        }
-
-        rewardNode.active = true;
-        this.setLabelText(this.currentUserItem, [
-            'GoldAndRewardNode/RewardNode/Label',
-            'RewardNode/Label',
-            'UserNode/GoldAndRewardNode/RewardNode/Label',
-            'UserNode/RewardNode/Label'
-        ], this.getCurrentUserRankStatusText(sortedList, currentUser.rankNo));
-        this.setNodeActive(rewardNode, ['CountLabel', 'DiamontSprite', 'DiamondSprite'], false);
+    private insertCurrentUserItem(sortedList: LastWeekRankingUserItem[], currentUser: LastWeekRankingUserItem) {
+        const displayList = [...sortedList];
+        displayList.splice(Math.max(0, currentUser.rankNo - 1), 0, currentUser);
+        return displayList;
     }
 
-    private getCurrentUserRankStatusText(sortedList: RankingUserItem[], rankNo: number) {
-        const totalCount = Math.max(sortedList.length, rankNo, 1);
-        if (rankNo <= this.getCutoffRankNo(totalCount, this.promotionCutoffRatio)) {
-            return '下周将升级段位';
-        }
-        if (rankNo <= this.getCutoffRankNo(totalCount, this.retentionCutoffRatio)) {
-            return '下周将保留段位';
-        }
-        return '下周将降低段位';
-    }
+    private getMockRankingData(): LastWeekRankingData {
+        const names = [
+            '玩家A', '玩家B', '玩家C', '玩家D', '玩家E', '玩家F', '玩家G', '玩家H', '玩家I', '玩家J',
+            '玩家K', '玩家L', '玩家M', '玩家N', '玩家O', '玩家P', '玩家Q', '玩家R', '玩家S', '玩家T',
+            '玩家U', '玩家V', '玩家W', '玩家X', '玩家Y', '玩家Z', '玩家AA', '玩家AB', '玩家AC', '玩家AD'
+        ];
+        const currentUserIndex = Math.min(29, Math.max(0, Math.floor(names.length / 2)));
 
-    private getNeedGoldToOvertake(targetGold: number, currentGold: number) {
-        return Math.max(0, Math.floor(Number(targetGold) - Number(currentGold) + 1));
-    }
-
-    private addExcisionNode(type: 'promotion' | 'retention', targetGold: number, currentGold: number) {
-        if (!this.content || !this.excisionNodeTemplate) {
-            return;
-        }
-
-        const excisionNode = instantiate(this.excisionNodeTemplate);
-        excisionNode.name = type === 'promotion'
-            ? 'GeneratedExcisionNode_Promotion'
-            : 'GeneratedExcisionNode_Retention';
-        excisionNode.active = true;
-
-        this.setLabelText(excisionNode, ['BeforeLabel'], '再赢');
-        this.setLabelText(excisionNode, ['NeedCountLabel'], String(this.getNeedGoldToOvertake(targetGold, currentGold)));
-        const coinSprite = excisionNode.getChildByPath('CoinSprite');
-        if (coinSprite) {
-            coinSprite.active = true;
-        }
-        this.setLabelText(excisionNode, ['AfterLabel'], type === 'promotion'
-            ? '超过Ta，本周将升段'
-            : '超过Ta，本周将保留段位');
-
-        this.content.addChild(excisionNode);
-    }
-
-    private loadFirstAvailableSpriteFrame(paths: string[], onLoaded: (spriteFrame: SpriteFrame) => void) {
-        const loadAt = (index: number) => {
-            const path = paths[index];
-            if (!path) {
-                console.error('[LastWeekRankingPopupLayer] 加载图片失败:', paths.join(', '));
-                return;
-            }
-
-            const spriteFramePath = this.toSpriteFramePath(path);
-            resources.load(spriteFramePath, SpriteFrame, (error, spriteFrame) => {
-                if (error || !spriteFrame) {
-                    loadAt(index + 1);
-                    return;
-                }
-                onLoaded(spriteFrame);
-            });
+        return {
+            groupInfo: {
+                groupId: 10001,
+                memberCount: 30,
+                settleTime: this.getLastWeekSettleTime()
+            },
+            rankingList: names.map((nickname, index) => ({
+                userId: index === currentUserIndex ? dataManager.userData.userId || 'local-current-user' : index + 1,
+                nickname: index === currentUserIndex ? dataManager.userData.username || '当前用户' : nickname,
+                avatarUrl: index === currentUserIndex ? dataManager.userData.avatarUrl : '',
+                rankNo: index + 1,
+                weeklyBattleGold: Math.max(800, 14200 - index * 390 - (index % 5) * 120)
+            }))
         };
-
-        loadAt(0);
     }
 
-    private getRankIconCandidatePaths(rankIcon: string) {
-        const cleanPath = this.cleanResourcePath(rankIcon);
-        return cleanPath.includes('/') ? [cleanPath] : [`rank/${cleanPath}`, cleanPath];
+    private isValidLastWeekRankingData(data: LastWeekRankingData | null | undefined): data is LastWeekRankingData {
+        return !!data
+            && !!data.groupInfo
+            && Number(data.groupInfo.memberCount || 0) > 0
+            && Array.isArray(data.rankingList);
     }
 
-    private toSpriteFramePath(path: string) {
-        const cleanPath = this.cleanResourcePath(path);
-        return cleanPath.endsWith('/spriteFrame') ? cleanPath : `${cleanPath}/spriteFrame`;
-    }
-
-    private cleanResourcePath(path: string) {
-        return path
-            .replace(/^resources\//, '')
-            .replace(/\.(png|jpg|jpeg|webp)$/i, '')
-            .replace(/^\/|\/$/g, '');
+    private getLastWeekSettleTime() {
+        const now = new Date();
+        const day = now.getDay() || 7;
+        const lastSunday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - day);
+        return `${lastSunday.getFullYear()}-${lastSunday.getMonth() + 1}-${lastSunday.getDate()} 23:59:59`;
     }
 
     private isDevelopmentEnvironment(): boolean {
@@ -522,7 +364,7 @@ export class LastWeekRankingPopupLayer extends BaseUI {
         const viewTransform = this.scrollView?.node.getChildByName('view')?.getComponent(UITransform) ?? null;
         const itemTransform = this.userItemTemplate?.getComponent(UITransform) ?? null;
         const layout = this.content.getComponent(Layout);
-        const itemHeight = itemTransform?.height ?? 110;
+        const itemHeight = itemTransform?.height ?? 90;
         const spacingY = layout?.spacingY ?? 0;
         const paddingTop = layout?.paddingTop ?? 0;
         const paddingBottom = layout?.paddingBottom ?? 0;
@@ -555,48 +397,9 @@ export class LastWeekRankingPopupLayer extends BaseUI {
             }
         }
 
-        console.warn('[LastWeekRankingPopupLayer] 未找到 Label:', paths.join(' | '));
         return false;
     }
-
-    private setNodeActive(root: Node, childNames: string[], active: boolean) {
-        childNames.forEach((childName) => {
-            const child = root.getChildByName(childName);
-            if (child) {
-                child.active = active;
-            }
-        });
-    }
-
-    private bindButtonEvents() {
-        this.bindNodeClick(this.shareSprite, this.onClickShare);
-        this.bindNodeClick(this.chatSprite, this.onClickChat);
-        this.bindNodeClick(this.closeButton, this.close);
-    }
-
-    private bindNodeClick(node: Node | null, handler: () => void) {
-        if (!node) {
-            return;
-        }
-
-        const button = node.getComponent(Button);
-        if (button) {
-            node.off(Button.EventType.CLICK, handler, this);
-            node.on(Button.EventType.CLICK, handler, this);
-            return;
-        }
-
-        node.off(Node.EventType.TOUCH_END, handler, this);
-        node.on(Node.EventType.TOUCH_END, handler, this);
-    }
-
     private resolveNodes() {
-        this.rankSprite ??= this.findComponentByPaths([
-            'PopupPanel/ContentNode/DescNode/RankSprite'
-        ], Sprite);
-        this.rankLabel ??= this.findComponentByPaths([
-            'PopupPanel/ContentNode/DescNode/RankLabel'
-        ], Label);
         this.scrollView ??= this.findComponentByPaths([
             'PopupPanel/ContentNode/ScrollView',
             'PopupPanel/ScrollView'
@@ -607,26 +410,64 @@ export class LastWeekRankingPopupLayer extends BaseUI {
         ]);
         this.userItemTemplate ??= this.findNodeByPaths([
             'PopupPanel/ContentNode/ScrollView/view/content/UserItem',
-            'PopupPanel/ContentNode/ScrollView/view/content/MessageItem',
-            'PopupPanel/ScrollView/view/content/UserItem',
-            'PopupPanel/ScrollView/view/content/MessageItem'
+            'PopupPanel/ScrollView/view/content/UserItem'
         ]);
         this.excisionNodeTemplate ??= this.findNodeByPaths([
             'PopupPanel/ContentNode/ScrollView/view/content/ExcisionNode',
             'PopupPanel/ScrollView/view/content/ExcisionNode'
         ]);
-        this.currentUserItem ??= this.findNodeByPaths([
-            'PopupPanel/ContentNode/CurrentUserItem',
-            'PopupPanel/CurrentUserItem'
-        ]);
-        this.shareSprite ??= this.findNodeByPaths([
-            'PopupPanel/ButtonNode/ShareSprite'
-        ]);
-        this.chatSprite ??= this.findNodeByPaths([
-            'PopupPanel/ButtonNode/ChatSprite'
-        ]);
         this.closeButton ??= this.findNodeByPaths([
             'PopupPanel/ButtonNode/Button'
         ]);
+    }
+
+    private bindRuntimeEvents() {
+        if (!this.closeButton?.isValid) {
+            return;
+        }
+
+        const button = this.closeButton.getComponent(Button);
+        this.closeButton.targetOff(this);
+        if (button) {
+            button.clickEvents = [];
+        }
+
+        this.closeButton.on(Node.EventType.TOUCH_START, this.onCloseButtonTouchStart, this);
+        this.closeButton.on(Node.EventType.TOUCH_END, this.onCloseButtonTouchEnd, this);
+        this.closeButton.on(Node.EventType.TOUCH_CANCEL, this.onCloseButtonTouchCancel, this);
+    }
+
+    private onCloseButtonTouchStart() {
+        if (!this.closeButton?.isValid) {
+            return;
+        }
+
+        this.closeButtonDefaultScale = this.closeButtonDefaultScale ?? this.closeButton.scale.clone();
+        Tween.stopAllByTarget(this.closeButton);
+        this.closeButton.setScale(
+            this.closeButtonDefaultScale.x * 0.9,
+            this.closeButtonDefaultScale.y * 0.9,
+            this.closeButtonDefaultScale.z
+        );
+    }
+
+    private onCloseButtonTouchEnd() {
+        this.close();
+        this.restoreCloseButtonScale();
+    }
+
+    private onCloseButtonTouchCancel() {
+        this.restoreCloseButtonScale();
+    }
+
+    private restoreCloseButtonScale() {
+        if (!this.closeButton?.isValid || !this.closeButtonDefaultScale) {
+            return;
+        }
+
+        Tween.stopAllByTarget(this.closeButton);
+        tween(this.closeButton)
+            .to(0.08, { scale: this.closeButtonDefaultScale.clone() })
+            .start();
     }
 }

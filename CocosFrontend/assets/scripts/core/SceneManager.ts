@@ -68,8 +68,8 @@ export class SceneManager {
             { name: SceneName.Loading, prefabPath: 'prefabs/ProgressBarCtrl', uiClass: null },
             { name: SceneName.Battle, prefabPath: 'prefabs/BattleUI', uiClass: null },
             { name: SceneName.Shop, prefabPath: 'prefabs/ShopUI', uiClass: null },
-            { name: SceneName.Chat, prefabPath: 'prefabs/ChatUI', uiClass: null },
-            { name: SceneName.Home, prefabPath: 'prefabs/HomeUI', uiClass: null },
+            { name: SceneName.Chat, prefabPath: 'prefabs/ChatView', uiClass: null },
+            { name: SceneName.Home, prefabPath: 'prefabs/HomeView', uiClass: null },
             { name: SceneName.Lobby, prefabPath: 'prefabs/LobbyUI', uiClass: null },
             { name: SceneName.Login, prefabPath: 'prefabs/LoginUI', uiClass: null }
         ];
