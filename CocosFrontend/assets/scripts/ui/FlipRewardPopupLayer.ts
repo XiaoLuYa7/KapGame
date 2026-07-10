@@ -4,7 +4,6 @@ import {
     instantiate,
     Label,
     Node,
-    resources,
     Sprite,
     SpriteFrame,
     tween,
@@ -16,6 +15,7 @@ import {
 import { BaseUI } from './BaseUI';
 import { dataManager } from '../core/DataManager';
 import { Platform } from '../utils/Platform';
+import { BundleResourceLoader } from './BundleResourceLoader';
 
 const { ccclass } = _decorator;
 
@@ -37,6 +37,8 @@ interface FlipCardView {
     glow: Node | null;
     reward: FlipRewardItem;
     baseScale: Vec3;
+    basePosition: Vec3;
+    baseAngle: number;
 }
 
 @ccclass('FlipRewardPopupLayer')
@@ -46,6 +48,8 @@ export class FlipRewardPopupLayer extends BaseUI {
     private readonly adMultiplier = 2;
     private readonly diamondMultiplier = 5;
     private popupPanel: Node | null = null;
+    private getResourceNode: Node | null = null;
+    private flyNode: Node | null = null;
     private titleLabel: Label | null = null;
     private closeButtonNode: Node | null = null;
     private resourcesPanel: Node | null = null;
@@ -73,11 +77,15 @@ export class FlipRewardPopupLayer extends BaseUI {
     private selectedCardIndex = -1;
     private hasBoundEvents = false;
     private loadingAssetsTask: Promise<void> | null = null;
+    private cardBasePositions: Vec3[] = [];
+    private cardBaseScales: Vec3[] = [];
 
     protected onInit() {
         super.onInit();
         this.resolveNodes();
-        this.node.active = false;
+        if (this.state === 'closed') {
+            this.node.active = false;
+        }
         void this.preload();
     }
 
@@ -98,12 +106,12 @@ export class FlipRewardPopupLayer extends BaseUI {
         }
 
         this.loadingAssetsTask = Promise.all([
-            this.loadSpriteFrame('tool/icon_coin/spriteFrame').then(frame => this.coinSpriteFrame = frame),
-            this.loadSpriteFrame('tool/icon_diamond/spriteFrame').then(frame => this.diamondSpriteFrame = frame),
-            this.loadSpriteFrame('tool/flip_reward/flip_card_back/spriteFrame').then(frame => this.cardBackSpriteFrame = frame),
-            this.loadSpriteFrame('tool/flip_reward/flip_card_front/spriteFrame').then(frame => this.cardFrontSpriteFrame = frame),
-            this.loadSpriteFrame('tool/flip_reward/flip_card_glow/spriteFrame').then(frame => this.cardGlowSpriteFrame = frame),
-            this.loadSpriteFrame('tool/flip_reward/flip_fly_glow/spriteFrame').then(frame => this.flyGlowSpriteFrame = frame)
+            this.loadSpriteFrame('image/icon_coin/spriteFrame').then(frame => this.coinSpriteFrame = frame),
+            this.loadSpriteFrame('image/icon_diamond/spriteFrame').then(frame => this.diamondSpriteFrame = frame),
+            this.loadSpriteFrame('image/flip_reward/flip_card_back/spriteFrame').then(frame => this.cardBackSpriteFrame = frame),
+            this.loadSpriteFrame('image/flip_reward/flip_card_front/spriteFrame').then(frame => this.cardFrontSpriteFrame = frame),
+            this.loadSpriteFrame('image/flip_reward/flip_card_glow/spriteFrame').then(frame => this.cardGlowSpriteFrame = frame),
+            this.loadSpriteFrame('image/flip_reward/flip_fly_glow/spriteFrame').then(frame => this.flyGlowSpriteFrame = frame)
         ]).then(() => {
             this.applyStaticSprites();
         });
@@ -117,6 +125,7 @@ export class FlipRewardPopupLayer extends BaseUI {
         this.node.active = true;
         this.node.setSiblingIndex(this.node.parent?.children.length ? this.node.parent.children.length - 1 : 0);
         this.resetRound();
+        this.setClaimVisualMode(false);
         this.syncResourceLabels();
         this.playStarEffect();
 
@@ -138,24 +147,119 @@ export class FlipRewardPopupLayer extends BaseUI {
 
     private async playIntro() {
         this.state = 'intro';
-        this.showAllCardsFront(false);
-        this.cards.forEach((card, index) => {
-            card.node.setScale(0.9, 0.9, 1);
-            tween(card.node)
-                .delay(index * 0.05)
-                .to(0.18, { scale: card.baseScale }, { easing: 'backOut' })
-                .start();
+        this.cards.forEach(card => {
+            Tween.stopAllByTarget(card.node);
+            card.node.setPosition(card.basePosition);
+            card.node.angle = card.baseAngle;
+            card.node.setScale(0.02, card.baseScale.y * 0.96, card.baseScale.z);
+            this.setCardFace(card, true);
+            if (card.glow) {
+                card.glow.active = false;
+            }
+            const opacity = card.node.getComponent(UIOpacity) ?? card.node.addComponent(UIOpacity);
+            opacity.opacity = 0;
         });
 
-        await this.wait(0.75);
+        await Promise.all(this.cards.map((card, index) => this.playCardExpand(card, index * 0.12)));
+        if (this.state !== 'intro' || !this.node.active) {
+            return;
+        }
+
+        await this.wait(1.0);
         if (this.state !== 'intro' || !this.node.active) {
             return;
         }
 
         await Promise.all(this.cards.map((card, index) => this.flipCard(card, false, index * 0.06)));
         if (this.state === 'intro') {
+            this.shuffleRewardsAfterPreview();
+            await this.playShuffleCards();
+        }
+
+        if (this.state === 'intro') {
             this.state = 'waiting';
         }
+    }
+
+    private playCardExpand(card: FlipCardView, delay: number): Promise<void> {
+        return new Promise(resolve => {
+            if (!card.node.isValid || !this.node.active) {
+                resolve();
+                return;
+            }
+
+            const opacity = card.node.getComponent(UIOpacity) ?? card.node.addComponent(UIOpacity);
+            tween(opacity)
+                .delay(delay)
+                .to(0.08, { opacity: 255 }, { easing: 'quadOut' })
+                .start();
+
+            tween(card.node)
+                .delay(delay)
+                .to(0.22, { scale: new Vec3(card.baseScale.x * 1.04, card.baseScale.y, card.baseScale.z) }, { easing: 'quadOut' })
+                .to(0.12, { scale: card.baseScale }, { easing: 'backOut' })
+                .call(() => resolve())
+                .start();
+        });
+    }
+
+    private async playShuffleCards() {
+        if (this.cards.length < 2 || this.state !== 'intro' || !this.node.active) {
+            return;
+        }
+
+        const tracks = this.cards.map(card => card.basePosition.clone());
+        const first = tracks[0];
+        const second = tracks[1] ?? first;
+        const third = tracks[2] ?? second;
+        const shuffleRounds = [
+            [third, second, first],
+            [first, second, third]
+        ];
+
+        for (let roundIndex = 0; roundIndex < shuffleRounds.length; roundIndex++) {
+            if (this.state !== 'intro' || !this.node.active) {
+                return;
+            }
+
+            await this.moveCardsToPositions(shuffleRounds[roundIndex], roundIndex);
+        }
+
+        this.cards.forEach(card => {
+            card.node.setPosition(card.basePosition);
+            card.node.setScale(card.baseScale);
+            card.node.angle = card.baseAngle;
+        });
+    }
+
+    private moveCardsToPositions(positions: Vec3[], roundIndex: number): Promise<void> {
+        return new Promise(resolve => {
+            let completed = 0;
+            const finishOne = () => {
+                completed++;
+                if (completed >= this.cards.length) {
+                    resolve();
+                }
+            };
+
+            this.cards.forEach((card, index) => {
+                const target = positions[index] ?? card.basePosition;
+                Tween.stopAllByTarget(card.node);
+                card.node.setSiblingIndex(index === 1 ? this.cards.length - 1 : index);
+                tween(card.node)
+                    .to(0.34, {
+                        position: target,
+                        scale: new Vec3(card.baseScale.x * 1.025, card.baseScale.y * 1.025, card.baseScale.z),
+                        angle: card.baseAngle + (index - 1) * 4 * (roundIndex % 2 === 0 ? 1 : -1)
+                    }, { easing: 'sineInOut' })
+                    .to(0.1, {
+                        scale: card.baseScale,
+                        angle: card.baseAngle
+                    }, { easing: 'quadOut' })
+                    .call(finishOne)
+                    .start();
+            });
+        });
     }
 
     private onCardClick(index: number) {
@@ -218,34 +322,36 @@ export class FlipRewardPopupLayer extends BaseUI {
             + (selectedReward.type === 'DIAMOND' ? finalCount : 0);
         const nextGold = (dataManager.userData.gold || 0)
             + (selectedReward.type === 'GOLD' ? finalCount : 0);
-        dataManager.updateUserData({ diamond: nextDiamond, gold: nextGold });
-        this.syncResourceLabels();
 
-        void this.playClaimAnimation(selectedReward.type).then(() => this.close());
+        this.setClaimVisualMode(true);
+        void this.playClaimAnimation(selectedReward.type)
+            .then(() => {
+                dataManager.updateUserData({ diamond: nextDiamond, gold: nextGold });
+                this.syncResourceLabels();
+            })
+            .then(() => this.wait(0.2))
+            .then(() => this.close());
     }
 
     private async playClaimAnimation(type: FlipRewardType) {
-        const sourceNode = this.cards[this.selectedCardIndex]?.rewardIcon?.node ?? this.cards[this.selectedCardIndex]?.node;
-        if (!sourceNode?.isValid || !this.flyEffectNode?.isValid) {
+        if (!this.flyEffectNode?.isValid) {
             return;
         }
 
         const targetNode = this.findResourceTargetNode(type);
-        const sourceWorld = this.getWorldCenter(sourceNode);
-        const targetWorld = targetNode ? this.getWorldCenter(targetNode) : new Vec3(300, 1160, 0);
+        const targetWorld = targetNode ? this.getWorldCenter(targetNode) : this.flyEffectNode.worldPosition.clone().add(new Vec3(240, 460, 0));
         const particles = 8;
         const tasks: Promise<void>[] = [];
 
         for (let i = 0; i < particles; i++) {
-            const delay = i * 0.035;
             const offset = new Vec3((i % 4 - 1.5) * 18, Math.floor(i / 4) * 18 - 9, 0);
-            tasks.push(this.flyOneReward(type, sourceWorld.clone().add(offset), targetWorld, delay));
+            tasks.push(this.flyOneReward(type, offset, targetWorld));
         }
 
         await Promise.all(tasks);
     }
 
-    private flyOneReward(type: FlipRewardType, startWorld: Vec3, targetWorld: Vec3, delay: number): Promise<void> {
+    private flyOneReward(type: FlipRewardType, offset: Vec3, targetWorld: Vec3): Promise<void> {
         return new Promise(resolve => {
             if (!this.flyEffectNode?.isValid) {
                 resolve();
@@ -269,17 +375,22 @@ export class FlipRewardPopupLayer extends BaseUI {
             glow.setSiblingIndex(0);
 
             const parentTransform = this.flyEffectNode.getComponent(UITransform);
-            const start = parentTransform?.convertToNodeSpaceAR(startWorld) ?? startWorld;
             const target = parentTransform?.convertToNodeSpaceAR(targetWorld) ?? targetWorld;
-            const mid = new Vec3((start.x + target.x) / 2, Math.max(start.y, target.y) + 90, 0);
+            const start = new Vec3(offset.x, offset.y, 0);
+            const opacity = flyNode.getComponent(UIOpacity) ?? flyNode.addComponent(UIOpacity);
+            opacity.opacity = 0;
             flyNode.setPosition(start);
-            flyNode.setScale(0.55, 0.55, 1);
+            flyNode.setScale(0.9, 0.9, 1);
+
+            tween(opacity)
+                .to(0.3, { opacity: 255 }, { easing: 'quadOut' })
+                .delay(0.72)
+                .to(0.16, { opacity: 0 }, { easing: 'quadIn' })
+                .start();
 
             tween(flyNode)
-                .delay(delay)
-                .to(0.12, { scale: new Vec3(0.9, 0.9, 1) }, { easing: 'quadOut' })
-                .to(0.3, { position: mid }, { easing: 'quadOut' })
-                .to(0.28, { position: target, scale: new Vec3(0.35, 0.35, 1) }, { easing: 'quadIn' })
+                .delay(0.5)
+                .to(0.68, { position: target }, { easing: 'sineInOut' })
                 .call(() => {
                     flyNode.destroy();
                     resolve();
@@ -295,11 +406,21 @@ export class FlipRewardPopupLayer extends BaseUI {
         this.cards = this.resolveCards();
         const rewards = this.createRoundRewards();
         this.cards.forEach((card, index) => {
+            if (!this.cardBasePositions[index]) {
+                this.cardBasePositions[index] = card.node.position.clone();
+            }
+            if (!this.cardBaseScales[index]) {
+                this.cardBaseScales[index] = card.node.scale.clone();
+            }
+
             card.reward = rewards[index];
-            card.baseScale = card.node.scale.clone();
+            card.basePosition = this.cardBasePositions[index].clone();
+            card.baseScale = this.cardBaseScales[index].clone();
+            card.baseAngle = index === 0 ? 8 : index === 2 ? -8 : 0;
             card.node.active = true;
+            card.node.setPosition(card.basePosition);
             card.node.setScale(card.baseScale);
-            card.node.angle = index === 0 ? 8 : index === 2 ? -8 : 0;
+            card.node.angle = card.baseAngle;
             this.applyRewardToCard(card);
             this.setCardFace(card, true);
             if (card.glow) {
@@ -311,6 +432,7 @@ export class FlipRewardPopupLayer extends BaseUI {
             this.buttonNode.active = false;
             this.buttonNode.setScale(1, 1, 1);
         }
+        this.setClaimVisualMode(false);
         if (this.doubleButtonNode) {
             this.doubleButtonNode.active = true;
         }
@@ -542,40 +664,39 @@ export class FlipRewardPopupLayer extends BaseUI {
 
     private resolveNodes() {
         this.popupPanel = this.node.getChildByPath('PopupPanel') ?? null;
-        this.titleLabel = this.findComponentByPaths(['PopupPanel/TitleNode/TitleLabel'], Label);
-        this.closeButtonNode = this.findNodeByPaths(['PopupPanel/TitleNode/CloseButton']);
-        this.resourcesPanel = this.findNodeByPaths(['PopupPanel/ResourcesPanel']);
+        this.getResourceNode = this.findNodeByPaths(['PopupPanel/GetResourceNode']);
+        this.flyNode = this.findNodeByPaths(['PopupPanel/FlyNode']);
+        this.titleLabel = this.findComponentByPaths(['PopupPanel/GetResourceNode/TitleNode/TitleLabel'], Label);
+        this.closeButtonNode = this.findNodeByPaths(['PopupPanel/GetResourceNode/TitleNode/CloseButton']);
+        this.resourcesPanel = this.findNodeByPaths(['PopupPanel/FlyNode/ResourcesPanel']);
         this.resourcesDiamondLabel = this.findComponentByPaths([
-            'PopupPanel/ResourcesPanel/DiamondPanel/DiamondLabel',
-            'PopupPanel/ResourcesPanel/DiamondPanel/CountLabel',
-            'PopupPanel/ResourcesPanel/DiamondLabel'
+            'PopupPanel/FlyNode/ResourcesPanel/DiamondPanel/DiamondLabel',
+            'PopupPanel/FlyNode/ResourcesPanel/DiamondPanel/CountLabel',
+            'PopupPanel/FlyNode/ResourcesPanel/DiamondLabel'
         ], Label);
         this.resourcesGoldLabel = this.findComponentByPaths([
-            'PopupPanel/ResourcesPanel/GoldPanel/GoldLabel',
-            'PopupPanel/ResourcesPanel/GoldPanel/CountLabel',
-            'PopupPanel/ResourcesPanel/GoldLabel'
+            'PopupPanel/FlyNode/ResourcesPanel/GoldPanel/GoldLabel',
+            'PopupPanel/FlyNode/ResourcesPanel/GoldPanel/CountLabel',
+            'PopupPanel/FlyNode/ResourcesPanel/GoldLabel'
         ], Label);
-        this.starEffectNode = this.findNodeByPaths([
-            'PopupPanel/StarEffectNode',
-            'PopupPanel/FlyEffectNode/StarEffectNode'
-        ]);
-        this.cardGroupNode = this.findNodeByPaths(['PopupPanel/CardGroupNode']);
-        this.buttonNode = this.findNodeByPaths(['PopupPanel/ButtonNode']);
-        this.standardButtonNode = this.findNodeByPaths(['PopupPanel/ButtonNode/StandardButton']);
-        this.doubleButtonNode = this.findNodeByPaths(['PopupPanel/ButtonNode/DoubleButton']);
-        this.fiveTimesNode = this.findNodeByPaths(['PopupPanel/ButtonNode/FiveTimesNode']);
-        this.fiveTimesButtonNode = this.findNodeByPaths(['PopupPanel/ButtonNode/FiveTimesNode/FiveTimeButton']);
-        this.flyEffectNode = this.findNodeByPaths(['PopupPanel/FlyEffectNode']);
-        this.flyCoinTemplate = this.findNodeByPaths(['PopupPanel/FlyEffectNode/FlyCoinTemplate']);
-        this.flyDiamondTemplate = this.findNodeByPaths(['PopupPanel/FlyEffectNode/FlyDiamondTemplate']);
-        this.flyGlowTemplate = this.findNodeByPaths(['PopupPanel/FlyEffectNode/FlyGlowTemplate']);
+        this.starEffectNode = this.findNodeByPaths(['PopupPanel/GetResourceNode/StarEffectNode']);
+        this.cardGroupNode = this.findNodeByPaths(['PopupPanel/GetResourceNode/CardGroupNode']);
+        this.buttonNode = this.findNodeByPaths(['PopupPanel/GetResourceNode/ButtonNode']);
+        this.standardButtonNode = this.findNodeByPaths(['PopupPanel/GetResourceNode/ButtonNode/StandardButton']);
+        this.doubleButtonNode = this.findNodeByPaths(['PopupPanel/GetResourceNode/ButtonNode/DoubleButton']);
+        this.fiveTimesNode = this.findNodeByPaths(['PopupPanel/GetResourceNode/ButtonNode/FiveTimesNode']);
+        this.fiveTimesButtonNode = this.findNodeByPaths(['PopupPanel/GetResourceNode/ButtonNode/FiveTimesNode/FiveTimeButton']);
+        this.flyEffectNode = this.findNodeByPaths(['PopupPanel/FlyNode/FlyEffectNode']);
+        this.flyCoinTemplate = this.findNodeByPaths(['PopupPanel/FlyNode/FlyEffectNode/FlyCoinTemplate']);
+        this.flyDiamondTemplate = this.findNodeByPaths(['PopupPanel/FlyNode/FlyEffectNode/FlyDiamondTemplate']);
+        this.flyGlowTemplate = this.findNodeByPaths(['PopupPanel/FlyNode/FlyEffectNode/FlyGlowTemplate']);
         if (this.titleLabel) {
             this.titleLabel.string = '翻牌抽奖';
         }
     }
 
     private resolveCards(): FlipCardView[] {
-        const cardGroup = this.cardGroupNode ?? this.findNodeByPaths(['PopupPanel/CardGroupNode']);
+        const cardGroup = this.cardGroupNode ?? this.findNodeByPaths(['PopupPanel/GetResourceNode/CardGroupNode']);
         if (!cardGroup) {
             return [];
         }
@@ -595,7 +716,9 @@ export class FlipRewardPopupLayer extends BaseUI {
                 rewardCountLabel: node.getChildByPath('CardFrontNode/RewardCountLabel')?.getComponent(Label) ?? null,
                 glow: node.getChildByName('SelectGlowSprite'),
                 reward: { type: 'GOLD', count: 0 },
-                baseScale: node.scale.clone()
+                baseScale: node.scale.clone(),
+                basePosition: node.position.clone(),
+                baseAngle: node.angle
             };
         }).filter((card): card is FlipCardView => !!card);
     }
@@ -612,6 +735,30 @@ export class FlipRewardPopupLayer extends BaseUI {
         return rewards.sort(() => Math.random() - 0.5);
     }
 
+    private shuffleRewardsAfterPreview() {
+        const rewards = this.cards.map(card => card.reward);
+        if (rewards.length <= 1) {
+            return;
+        }
+
+        const shuffledRewards = rewards.slice();
+        for (let index = shuffledRewards.length - 1; index > 0; index--) {
+            const swapIndex = Math.floor(Math.random() * (index + 1));
+            [shuffledRewards[index], shuffledRewards[swapIndex]] = [shuffledRewards[swapIndex], shuffledRewards[index]];
+        }
+
+        const unchanged = shuffledRewards.every((reward, index) => reward === rewards[index]);
+        if (unchanged) {
+            shuffledRewards.push(shuffledRewards.shift()!);
+        }
+
+        this.cards.forEach((card, index) => {
+            card.reward = shuffledRewards[index];
+            this.applyRewardToCard(card);
+            this.setCardFace(card, false);
+        });
+    }
+
     private pick<T>(items: T[]): T {
         return items[Math.floor(Math.random() * items.length)];
     }
@@ -620,28 +767,40 @@ export class FlipRewardPopupLayer extends BaseUI {
         const canvas = this.getCanvasNode();
         const paths = type === 'DIAMOND'
             ? [
-                'PopupPanel/ResourcesPanel/DiamondPanel/DiamondIcon',
-                'PopupPanel/ResourcesPanel/DiamondPanel/DiamondSprite',
-                'PopupPanel/ResourcesPanel/DiamondPanel/DiamontSprite',
-                'PopupPanel/ResourcesPanel/DiamondPanel',
-                'PopupPanel/ResourcesPanel',
-                'Home/HeaderContainer/UserResPanel/ResourcesPanel/DiamondPanel/DiamondIcon',
-                'Home/HeaderContainer/UserResPanel/ResourcesPanel/DiamondPanel/DiamondSprite',
-                'Home/HeaderContainer/UserResPanel/ResourcesPanel/DiamondPanel',
-                'HeaderContainer/UserResPanel/ResourcesPanel/DiamondPanel'
+                'PopupPanel/FlyNode/ResourcesPanel/DiamondPanel/DiamondIcon',
+                'PopupPanel/FlyNode/ResourcesPanel/DiamondPanel/DiamondSprite',
+                'PopupPanel/FlyNode/ResourcesPanel/DiamondPanel/DiamontSprite',
+                'PopupPanel/FlyNode/ResourcesPanel/DiamondPanel',
+                'PopupPanel/FlyNode/ResourcesPanel'
             ]
             : [
-                'PopupPanel/ResourcesPanel/GoldPanel/GoldIcon',
-                'PopupPanel/ResourcesPanel/GoldPanel/GoldSprite',
-                'PopupPanel/ResourcesPanel/GoldPanel/CoinSprite',
-                'PopupPanel/ResourcesPanel/GoldPanel',
-                'PopupPanel/ResourcesPanel',
-                'Home/HeaderContainer/UserResPanel/ResourcesPanel/GoldPanel/GoldIcon',
-                'Home/HeaderContainer/UserResPanel/ResourcesPanel/GoldPanel/GoldSprite',
-                'Home/HeaderContainer/UserResPanel/ResourcesPanel/GoldPanel',
-                'HeaderContainer/UserResPanel/ResourcesPanel/GoldPanel'
+                'PopupPanel/FlyNode/ResourcesPanel/GoldPanel/GoldIcon',
+                'PopupPanel/FlyNode/ResourcesPanel/GoldPanel/GoldSprite',
+                'PopupPanel/FlyNode/ResourcesPanel/GoldPanel/CoinSprite',
+                'PopupPanel/FlyNode/ResourcesPanel/GoldPanel',
+                'PopupPanel/FlyNode/ResourcesPanel'
             ];
         return this.findNodeByPaths(paths, this.node) ?? this.findNodeByPaths(paths, canvas);
+    }
+
+    private setClaimVisualMode(claiming: boolean) {
+        if (this.getResourceNode?.isValid) {
+            this.getResourceNode.active = !claiming;
+        }
+        if (this.flyNode?.isValid) {
+            this.flyNode.active = true;
+        }
+        if (this.flyEffectNode?.isValid) {
+            this.flyEffectNode.active = claiming;
+        }
+        for (const template of [this.flyCoinTemplate, this.flyDiamondTemplate, this.flyGlowTemplate]) {
+            if (template?.isValid) {
+                template.active = false;
+            }
+        }
+        if (!claiming) {
+            this.clearFlyNodes();
+        }
     }
 
     private syncResourceLabels() {
@@ -719,16 +878,7 @@ export class FlipRewardPopupLayer extends BaseUI {
     }
 
     private async loadSpriteFrame(path: string): Promise<SpriteFrame | null> {
-        return new Promise(resolve => {
-            resources.load(path, SpriteFrame, (error, frame) => {
-                if (error) {
-                    console.warn(`[FlipRewardPopupLayer] load sprite failed: ${path}`, error);
-                    resolve(null);
-                    return;
-                }
-                resolve(frame);
-            });
-        });
+        return BundleResourceLoader.loadSpriteFrame(path);
     }
 
     private wait(seconds: number): Promise<void> {

@@ -1,0 +1,134 @@
+{
+  "ver": "1.0.27",
+  "importer": "image",
+  "imported": true,
+  "uuid": "34c71d4b-ff97-45d1-839f-7fda96dc72a2",
+  "files": [
+    ".json",
+    ".png"
+  ],
+  "subMetas": {
+    "6c48a": {
+      "importer": "texture",
+      "uuid": "34c71d4b-ff97-45d1-839f-7fda96dc72a2@6c48a",
+      "displayName": "RewardDay",
+      "id": "6c48a",
+      "name": "texture",
+      "userData": {
+        "wrapModeS": "clamp-to-edge",
+        "wrapModeT": "clamp-to-edge",
+        "imageUuidOrDatabaseUri": "34c71d4b-ff97-45d1-839f-7fda96dc72a2",
+        "isUuid": true,
+        "visible": false,
+        "minfilter": "linear",
+        "magfilter": "linear",
+        "mipfilter": "none",
+        "anisotropy": 0
+      },
+      "ver": "1.0.22",
+      "imported": true,
+      "files": [
+        ".json"
+      ],
+      "subMetas": {}
+    },
+    "f9941": {
+      "importer": "sprite-frame",
+      "uuid": "34c71d4b-ff97-45d1-839f-7fda96dc72a2@f9941",
+      "displayName": "RewardDay",
+      "id": "f9941",
+      "name": "spriteFrame",
+      "userData": {
+        "trimThreshold": 1,
+        "rotated": false,
+        "offsetX": -0.5,
+        "offsetY": -10,
+        "trimX": 19,
+        "trimY": 43,
+        "width": 921,
+        "height": 414,
+        "rawWidth": 960,
+        "rawHeight": 480,
+        "borderTop": 0,
+        "borderBottom": 0,
+        "borderLeft": 0,
+        "borderRight": 0,
+        "packable": true,
+        "pixelsToUnit": 100,
+        "pivotX": 0.5,
+        "pivotY": 0.5,
+        "meshType": 0,
+        "vertices": {
+          "rawPosition": [
+            -460.5,
+            -207,
+            0,
+            460.5,
+            -207,
+            0,
+            -460.5,
+            207,
+            0,
+            460.5,
+            207,
+            0
+          ],
+          "indexes": [
+            0,
+            1,
+            2,
+            2,
+            1,
+            3
+          ],
+          "uv": [
+            19,
+            437,
+            940,
+            437,
+            19,
+            23,
+            940,
+            23
+          ],
+          "nuv": [
+            0.019791666666666666,
+            0.04791666666666667,
+            0.9791666666666666,
+            0.04791666666666667,
+            0.019791666666666666,
+            0.9104166666666667,
+            0.9791666666666666,
+            0.9104166666666667
+          ],
+          "minPos": [
+            -460.5,
+            -207,
+            0
+          ],
+          "maxPos": [
+            460.5,
+            207,
+            0
+          ]
+        },
+        "isUuid": true,
+        "imageUuidOrDatabaseUri": "34c71d4b-ff97-45d1-839f-7fda96dc72a2@6c48a",
+        "atlasUuid": "",
+        "trimType": "auto"
+      },
+      "ver": "1.0.12",
+      "imported": true,
+      "files": [
+        ".json"
+      ],
+      "subMetas": {}
+    }
+  },
+  "userData": {
+    "type": "sprite-frame",
+    "fixAlphaTransparencyArtifacts": false,
+    "hasAlpha": true,
+    "redirect": "34c71d4b-ff97-45d1-839f-7fda96dc72a2@6c48a"
+  }
+}

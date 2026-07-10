@@ -1,5 +1,9 @@
 CocosFrontend/.venv-image/
 
+# macOS metadata
+.DS_Store
+**/.DS_Store
+
 # Local tools / npm global
 .tools/
 npm-global/
@@ -10,6 +14,10 @@ CocosFrontend/temp/
 CocosFrontend/library/
 CocosFrontend/local/
 CocosFrontend/build/
+
+# Local asset archives; exceeds GitHub's single-file size limit.
+CocosFrontend/assets/resources/image.zip
+CocosFrontend/assets/resources/image.zip.meta
 
 # Python virtual env
 .venv/

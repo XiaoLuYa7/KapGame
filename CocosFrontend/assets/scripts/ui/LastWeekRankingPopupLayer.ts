@@ -14,6 +14,7 @@ import {
 import { BaseUI } from './BaseUI';
 import { Http } from '../network/Http';
 import { dataManager } from '../core/DataManager';
+import { PopupStack } from './PopupStack';
 
 declare const wx: any;
 
@@ -115,12 +116,11 @@ export class LastWeekRankingPopupLayer extends BaseUI {
         this.resolveNodes();
         this.bindRuntimeEvents();
         await this.prepareContent();
-        this.node.active = true;
-        this.node.setSiblingIndex(this.node.parent ? this.node.parent.children.length - 1 : this.node.getSiblingIndex());
+        PopupStack.open(this.node);
     }
 
     close() {
-        this.node.active = false;
+        PopupStack.close(this.node);
         const callbacks = [...this.closeCallbacks];
         this.closeCallbacks = [];
         callbacks.forEach((callback) => callback());
@@ -385,7 +385,24 @@ export class LastWeekRankingPopupLayer extends BaseUI {
         }
 
         layout?.updateLayout();
+        this.configureRigidScrollView();
         this.scrollView?.scrollToTop(0);
+    }
+
+    private configureRigidScrollView() {
+        if (!this.scrollView) {
+            return;
+        }
+
+        this.scrollView.stopAutoScroll();
+        this.scrollView.horizontal = false;
+        this.scrollView.vertical = true;
+        this.scrollView.elastic = false;
+        this.scrollView.bounceDuration = 0;
+        this.scrollView.inertia = true;
+        this.scrollView.horizontalScrollBar = null;
+        this.scrollView.verticalScrollBar = null;
+        this.scrollView.enabled = true;
     }
 
     private setLabelText(root: Node, paths: string[], text: string) {

@@ -1,5 +1,6 @@
-import { _decorator, Button, instantiate, Label, Layout, Node, resources, ScrollView, Sprite, SpriteFrame, UITransform } from 'cc';
+import { _decorator, Button, instantiate, Label, Layout, Node, ScrollView, Sprite, SpriteFrame, UITransform } from 'cc';
 import { BaseUI } from './BaseUI';
+import { BundleResourceLoader } from './BundleResourceLoader';
 
 const { ccclass } = _decorator;
 
@@ -22,7 +23,7 @@ interface BackPackItem {
 
 @ccclass('BackPackPopupLayer')
 export class BackPackPopupLayer extends BaseUI {
-    private readonly selectButtonSpritePath = 'tool/backpack/bp_select_button/spriteFrame';
+    private readonly selectButtonSpritePath = 'image/backpack/bp_select_button/spriteFrame';
     private readonly generatedItemPrefix = 'GeneratedBackPackItem_';
     private selectedCategory: BackPackCategory = 'decorate';
     private selectedSpriteFrame: SpriteFrame | null = null;
@@ -126,39 +127,39 @@ export class BackPackPopupLayer extends BaseUI {
     private getMockItems(category: BackPackCategory): BackPackItem[] {
         const mockItems: Record<BackPackCategory, BackPackItem[]> = {
             decorate: [
-                { category, itemName: '星辉头像框', itemIcon: 'tool/charm/charm01', quantity: 1 },
-                { category, itemName: '紫晶称号牌', itemIcon: 'tool/charm/charm07', quantity: 2 },
-                { category, itemName: '黄金入场特效', itemIcon: 'tool/charm/charm12', expireTime: '7天后到期' },
-                { category, itemName: '月光卡背', itemIcon: 'tool/charm/charm18', expireTime: '永久' },
-                { category, itemName: '粉晶挂件', itemIcon: 'tool/charm/charm03', quantity: 1 },
-                { category, itemName: '蓝焰名片', itemIcon: 'tool/charm/charm06', expireTime: '5天后到期' },
-                { category, itemName: '星河气泡', itemIcon: 'tool/charm/charm09', quantity: 4 },
-                { category, itemName: '王者边框', itemIcon: 'tool/charm/charm15', expireTime: '永久' },
-                { category, itemName: '幸运尾迹', itemIcon: 'tool/charm/charm10', quantity: 1 },
-                { category, itemName: '糖果徽章', itemIcon: 'tool/charm/charm04', expireTime: '2天后到期' }
+                { category, itemName: '星辉头像框', itemIcon: 'image/charm/charm01', quantity: 1 },
+                { category, itemName: '紫晶称号牌', itemIcon: 'image/charm/charm07', quantity: 2 },
+                { category, itemName: '黄金入场特效', itemIcon: 'image/charm/charm12', expireTime: '7天后到期' },
+                { category, itemName: '月光卡背', itemIcon: 'image/charm/charm18', expireTime: '永久' },
+                { category, itemName: '粉晶挂件', itemIcon: 'image/charm/charm03', quantity: 1 },
+                { category, itemName: '蓝焰名片', itemIcon: 'image/charm/charm06', expireTime: '5天后到期' },
+                { category, itemName: '星河气泡', itemIcon: 'image/charm/charm09', quantity: 4 },
+                { category, itemName: '王者边框', itemIcon: 'image/charm/charm15', expireTime: '永久' },
+                { category, itemName: '幸运尾迹', itemIcon: 'image/charm/charm10', quantity: 1 },
+                { category, itemName: '糖果徽章', itemIcon: 'image/charm/charm04', expireTime: '2天后到期' }
             ],
             present: [
-                { category, itemName: '金币礼盒', itemIcon: 'tool/icon_coin', quantity: 5 },
-                { category, itemName: '钻石礼盒', itemIcon: 'tool/icon_diamond', quantity: 2 },
-                { category, itemName: '幸运星礼物', itemIcon: 'tool/reward/star', expireTime: '3天后到期' },
-                { category, itemName: '好友感谢包', itemIcon: 'tool/share', quantity: 6 },
-                { category, itemName: '赛季补给箱', itemIcon: 'tool/general_popup', expireTime: '明天到期' },
-                { category, itemName: '成长礼包', itemIcon: 'tool/receive', quantity: 3 },
-                { category, itemName: '闪耀礼券', itemIcon: 'tool/seceived', expireTime: '6天后到期' },
-                { category, itemName: '欢庆宝箱', itemIcon: 'tool/coin_reward', quantity: 9 },
-                { category, itemName: '惊喜红包', itemIcon: 'tool/dailycheck/coin4', quantity: 12 }
+                { category, itemName: '金币礼盒', itemIcon: 'image/icon_coin', quantity: 5 },
+                { category, itemName: '钻石礼盒', itemIcon: 'image/icon_diamond', quantity: 2 },
+                { category, itemName: '幸运星礼物', itemIcon: 'image/reward/star', expireTime: '3天后到期' },
+                { category, itemName: '好友感谢包', itemIcon: 'image/share', quantity: 6 },
+                { category, itemName: '赛季补给箱', itemIcon: 'image/general_popup', expireTime: '明天到期' },
+                { category, itemName: '成长礼包', itemIcon: 'image/receive', quantity: 3 },
+                { category, itemName: '闪耀礼券', itemIcon: 'image/seceived', expireTime: '6天后到期' },
+                { category, itemName: '欢庆宝箱', itemIcon: 'image/coin_reward', quantity: 9 },
+                { category, itemName: '惊喜红包', itemIcon: 'image/dailycheck/coin4', quantity: 12 }
             ],
             prop: [
-                { category, itemName: '双倍金币卡', itemIcon: 'tool/coin_reward', quantity: 3 },
-                { category, itemName: '改名卡', itemIcon: 'tool/backpack/empty_icon', quantity: 1 },
-                { category, itemName: '护盾道具', itemIcon: 'tool/right_mark', expireTime: '12小时后到期' },
-                { category, itemName: '经验加速卡', itemIcon: 'tool/progress/progress_icon_right', quantity: 8 },
-                { category, itemName: '刷新券', itemIcon: 'tool/progress/progress_icon_left', quantity: 5 },
+                { category, itemName: '双倍金币卡', itemIcon: 'image/coin_reward', quantity: 3 },
+                { category, itemName: '改名卡', itemIcon: 'image/backpack/empty_icon', quantity: 1 },
+                { category, itemName: '护盾道具', itemIcon: 'image/right_mark', expireTime: '12小时后到期' },
+                { category, itemName: '经验加速卡', itemIcon: 'image/progress/progress_icon_right', quantity: 8 },
+                { category, itemName: '刷新券', itemIcon: 'image/progress/progress_icon_left', quantity: 5 },
                 { category, itemName: '挑战门票', itemIcon: 'game/Gameplay/Rank_Challenge', quantity: 2 },
-                { category, itemName: '保护卡', itemIcon: 'tool/general_radius_bg', expireTime: '今晚到期' },
-                { category, itemName: '幸运骰子', itemIcon: 'tool/bofang', quantity: 7 },
-                { category, itemName: '复活道具', itemIcon: 'tool/first_tag', quantity: 4 },
-                { category, itemName: '加时卡', itemIcon: 'tool/second_tag', expireTime: '4天后到期' }
+                { category, itemName: '保护卡', itemIcon: 'image/general_radius_bg', expireTime: '今晚到期' },
+                { category, itemName: '幸运骰子', itemIcon: 'image/bofang', quantity: 7 },
+                { category, itemName: '复活道具', itemIcon: 'image/first_tag', quantity: 4 },
+                { category, itemName: '加时卡', itemIcon: 'image/second_tag', expireTime: '4天后到期' }
             ]
         };
 
@@ -293,15 +294,7 @@ export class BackPackPopupLayer extends BaseUI {
         }
 
         const promise = new Promise<SpriteFrame | null>((resolve) => {
-            resources.load(resourcePath, SpriteFrame, (error, spriteFrame) => {
-                if (!error && spriteFrame) {
-                    resolve(spriteFrame);
-                    return;
-                }
-                resources.load(`${resourcePath}/spriteFrame`, SpriteFrame, (fallbackError, fallbackSpriteFrame) => {
-                    resolve(fallbackError ? null : fallbackSpriteFrame ?? null);
-                });
-            });
+            void BundleResourceLoader.loadSpriteFrame(resourcePath).then(resolve);
         }).then((spriteFrame) => {
             this.spriteFrameCache.set(resourcePath, spriteFrame);
             this.spriteFrameLoading.delete(resourcePath);
@@ -371,6 +364,7 @@ export class BackPackPopupLayer extends BaseUI {
         scrollView.horizontal = false;
         scrollView.vertical = true;
         scrollView.elastic = false;
+        scrollView.bounceDuration = 0;
         scrollView.inertia = true;
         scrollView.brake = 0.5;
         scrollView.cancelInnerEvents = true;
@@ -422,14 +416,7 @@ export class BackPackPopupLayer extends BaseUI {
         }
 
         this.selectedSpriteFrame = await new Promise<SpriteFrame | null>((resolve) => {
-            resources.load(this.selectButtonSpritePath, SpriteFrame, (error, spriteFrame) => {
-                if (error) {
-                    console.error('[BackPackPopupLayer] load selected tab sprite failed:', error);
-                    resolve(null);
-                    return;
-                }
-                resolve(spriteFrame ?? null);
-            });
+            void BundleResourceLoader.loadSpriteFrame(this.selectButtonSpritePath).then(resolve);
         });
     }
 

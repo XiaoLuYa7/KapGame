@@ -1,4 +1,5 @@
 import { instantiate, Node, Prefab, resources } from 'cc';
+import { BundleResourceLoader } from './BundleResourceLoader';
 
 export class PopupPrefabLoader {
     private static readonly prefabRootPath = 'prefabs/pop';
@@ -62,6 +63,17 @@ export class PopupPrefabLoader {
         }
 
         const task = new Promise<Prefab | null>(resolve => {
+            const bundleName = BundleResourceLoader.getBundleNameForPopup(prefabName);
+            if (bundleName) {
+                void BundleResourceLoader.loadPrefab(path, prefabName).then(prefab => {
+                    if (!prefab) {
+                        console.warn(`[PopupPrefabLoader] Load prefab failed: ${bundleName}/${path}`);
+                    }
+                    resolve(prefab);
+                });
+                return;
+            }
+
             resources.load(path, Prefab, (error, prefab) => {
                 if (error || !prefab) {
                     console.warn(`[PopupPrefabLoader] Load prefab failed: ${path}`, error);

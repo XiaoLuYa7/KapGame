@@ -16,6 +16,8 @@ export * from './core/GameManager';
 
 // UI 基类
 export * from './ui/BaseUI';
+export * from './ui/BundleResourceLoader';
+export * from './ui/PopupStack';
 
 // UI 控制器
 export * from './ui/HomeView';
@@ -27,6 +29,9 @@ export * from './ui/WeekRankingPopupLayer';
 export * from './ui/LastWeekRankingPopupLayer';
 export * from './ui/BackPackPopupLayer';
 export * from './ui/FlipRewardPopupLayer';
+export * from './ui/InviteRewardPopupLayer';
+export * from './ui/RankChallengePopupLayer';
+export * from './ui/BattleMatchPopupLayer';
 export * from './ui/ShopUI';
 export * from './ui/LobbyUI';
 export * from './ui/BattleUI';

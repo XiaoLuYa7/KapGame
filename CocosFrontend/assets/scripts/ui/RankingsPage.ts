@@ -1,5 +1,6 @@
 import { _decorator, Button, Color, Component, instantiate, Label, Layout, Node, resources, ScrollView, Sprite, SpriteFrame, UITransform } from 'cc';
 import { dataManager } from '../core/DataManager';
+import { PopupStack } from './PopupStack';
 
 const { ccclass, property } = _decorator;
 
@@ -7,8 +8,8 @@ type RankingsTab = 'charm' | 'rank' | 'gold' | 'record';
 type RankingsScope = 'world' | 'friend';
 type RankingsWeek = 'week' | 'lastWeek';
 const DROPDOWN_MENU_PRIORITY = 1000;
-const DROPDOWN_MENU_UP_SPRITE = 'tool/rankings/rankings_menu_up_tag';
-const DROPDOWN_MENU_DOWN_SPRITE = 'tool/rankings/rankings_menu_down_tag';
+const DROPDOWN_MENU_UP_SPRITE = 'image/rankings/rankings_menu_up_tag';
+const DROPDOWN_MENU_DOWN_SPRITE = 'image/rankings/rankings_menu_down_tag';
 
 interface DropdownMenuPlacement {
     parent: Node;
@@ -105,12 +106,11 @@ export class RankingsPage extends Component {
 
     async open() {
         await this.initialize();
-        this.node.active = true;
-        this.node.setSiblingIndex(this.node.parent ? this.node.parent.children.length - 1 : this.node.getSiblingIndex());
+        PopupStack.open(this.node, { hideSiblings: false });
     }
 
     close() {
-        this.node.active = false;
+        PopupStack.close(this.node);
     }
 
     private resolveNodes() {
@@ -124,22 +124,22 @@ export class RankingsPage extends Component {
 
     private async preloadStaticSpriteFrames() {
         await Promise.all([
-            this.loadSpriteFrame('tool/rankings/rankings_select_tab'),
-            this.loadSpriteFrame('tool/rankings/rankings_unselect_tab'),
+            this.loadSpriteFrame('image/rankings/rankings_select_tab'),
+            this.loadSpriteFrame('image/rankings/rankings_unselect_tab'),
             this.loadSpriteFrame(DROPDOWN_MENU_UP_SPRITE),
             this.loadSpriteFrame(DROPDOWN_MENU_DOWN_SPRITE),
-            this.loadSpriteFrame('tool/first_tag'),
-            this.loadSpriteFrame('tool/second_tag'),
-            this.loadSpriteFrame('tool/three_tag'),
-            this.loadSpriteFrame('tool/avatar'),
-            this.loadSpriteFrame('tool/rank/bronze'),
-            this.loadSpriteFrame('tool/rank/silver'),
-            this.loadSpriteFrame('tool/rank/gold'),
-            this.loadSpriteFrame('tool/rank/platinum'),
-            this.loadSpriteFrame('tool/rank/diamond'),
-            this.loadSpriteFrame('tool/rank/starshine'),
-            this.loadSpriteFrame('tool/rank/master'),
-            this.loadSpriteFrame('tool/rank/king')
+            this.loadSpriteFrame('image/first_tag'),
+            this.loadSpriteFrame('image/second_tag'),
+            this.loadSpriteFrame('image/three_tag'),
+            this.loadSpriteFrame('image/avatar'),
+            this.loadSpriteFrame('image/rank/bronze'),
+            this.loadSpriteFrame('image/rank/silver'),
+            this.loadSpriteFrame('image/rank/gold'),
+            this.loadSpriteFrame('image/rank/platinum'),
+            this.loadSpriteFrame('image/rank/diamond'),
+            this.loadSpriteFrame('image/rank/starshine'),
+            this.loadSpriteFrame('image/rank/master'),
+            this.loadSpriteFrame('image/rank/king')
         ]);
     }
 
@@ -215,7 +215,7 @@ export class RankingsPage extends Component {
 
         for (const [tabName, tabNode, panelNode] of tabMap) {
             const selected = tabName === tab;
-            this.setNodeSprite(tabNode, selected ? 'tool/rankings/rankings_select_tab' : 'tool/rankings/rankings_unselect_tab');
+            this.setNodeSprite(tabNode, selected ? 'image/rankings/rankings_select_tab' : 'image/rankings/rankings_unselect_tab');
             if (panelNode?.isValid) {
                 panelNode.active = selected;
             }
@@ -351,8 +351,26 @@ export class RankingsPage extends Component {
         }
 
         this.resizeScrollContent(content, config.node.getChildByPath('UserListPanel/UserListScrollView/view'));
-        config.node.getChildByPath('UserListPanel/UserListScrollView')?.getComponent(ScrollView)?.scrollToTop(0);
+        const scrollView = config.node.getChildByPath('UserListPanel/UserListScrollView')?.getComponent(ScrollView) ?? null;
+        this.configureRigidScrollView(scrollView);
+        scrollView?.scrollToTop(0);
         this.renderCurrentUser(config);
+    }
+
+    private configureRigidScrollView(scrollView: ScrollView | null) {
+        if (!scrollView) {
+            return;
+        }
+
+        scrollView.stopAutoScroll();
+        scrollView.horizontal = false;
+        scrollView.vertical = true;
+        scrollView.elastic = false;
+        scrollView.bounceDuration = 0;
+        scrollView.inertia = true;
+        scrollView.horizontalScrollBar = null;
+        scrollView.verticalScrollBar = null;
+        scrollView.enabled = true;
     }
 
     private renderCurrentUser(config: RankingsPanelConfig) {
@@ -368,7 +386,7 @@ export class RankingsPage extends Component {
     private renderRankingItem(item: Node, user: RankingUser, config: RankingsPanelConfig, outOfRank = false) {
         this.renderRankNode(item, item.getChildByName('RankNode'), user.rank, outOfRank);
         this.setLabel(item.getChildByPath('DescNode/NameLabel'), user.name);
-        this.setNodeSprite(item.getChildByPath('AvatarMask/Avatar'), user.avatar || 'tool/avatar');
+        this.setNodeSprite(item.getChildByPath('AvatarMask/Avatar'), user.avatar || 'image/avatar');
 
         if (config.tab === 'rank') {
             this.setLabel(item.getChildByPath('DescNode/RankInfoNode/NameLabel'), user.rankName);
@@ -411,7 +429,7 @@ export class RankingsPage extends Component {
         if (rank <= 3) {
             if (rankSpriteNode) {
                 rankSpriteNode.active = true;
-                this.setNodeSprite(rankSpriteNode, rank === 1 ? 'tool/first_tag' : rank === 2 ? 'tool/second_tag' : 'tool/three_tag');
+                this.setNodeSprite(rankSpriteNode, rank === 1 ? 'image/first_tag' : rank === 2 ? 'image/second_tag' : 'image/three_tag');
             }
             if (rankLabelNode) {
                 rankLabelNode.active = false;
@@ -560,8 +578,8 @@ export class RankingsPage extends Component {
             victory: Math.max(1, Math.floor((userData.level ?? 1) * 1.8)),
             rankCode: userData.rankCode || 'GOLD',
             rankName: userData.rankName || userData.rank || '黄金',
-            rankIcon: userData.rankIcon || 'tool/rank/gold',
-            avatar: 'tool/avatar'
+            rankIcon: userData.rankIcon || 'image/rank/gold',
+            avatar: 'image/avatar'
         };
     }
 
@@ -578,7 +596,7 @@ export class RankingsPage extends Component {
             rankCode: code,
             rankName: this.getRankNameByCode(code),
             rankIcon: this.getRankIconByCode(code),
-            avatar: 'tool/avatar'
+            avatar: 'image/avatar'
         };
     }
 
@@ -603,7 +621,7 @@ export class RankingsPage extends Component {
 
     private getRankIconByCode(code: string) {
         const value = String(code || 'BRONZE').toLowerCase();
-        return `tool/rank/${value}`;
+        return `image/rank/${value}`;
     }
 
     private bindClick(node: Node | null, handler: () => void, debugName: string) {

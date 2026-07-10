@@ -10,6 +10,8 @@ import { LastWeekRankingPopupLayer } from './LastWeekRankingPopupLayer';
 import { WeekRankingPopupLayer } from './WeekRankingPopupLayer';
 import { PopupPrefabLoader } from './PopupPrefabLoader';
 import { SettingsPopupRoot } from './SettingsPopupRoot';
+import { PopupStack } from './PopupStack';
+import { BundleResourceLoader } from './BundleResourceLoader';
 
 const { ccclass, property } = _decorator;
 type HomeTabName = 'Game' | 'Chat';
@@ -33,6 +35,8 @@ export class HomeView extends BaseUI {
         'WeekRankingPopupLayer',
         'BackPackPopupLayer',
         'FlipRewardPopupLayer',
+        'InviteRewardPopupLayer',
+        'RankChallengePopupLayer',
         'RankingsPage'
     ];
     private readonly lastWeekRankingPopupShownStorageKey = 'kapgame_last_week_ranking_popup_shown';
@@ -97,19 +101,20 @@ export class HomeView extends BaseUI {
     private weekRankingPopupLayerNode: Node | null = null;
     private lastWeekRankingPopupLayerNode: Node | null = null;
     private rankingPopupsPreloadPromise: Promise<void> | null = null;
+    private popupWarmupStarted = false;
 
     onInit() {
         super.onInit();
         this.currentTab = this.defaultTab;
         this.resolveNodes();
         this.hideStartupPopups();
+        this.destroyBundledPopupSceneInstances();
         this.hidePopupRoots();
         this.logTabState('onInit:beforeApply');
         this.applyActiveTabVisibility(this.currentTab);
         this.logTabState('onInit:afterApply');
         this.bindHomeEntryEvents();
         this.scheduleOnce(this.rebindHomeEntryEvents, 0);
-        void this.preloadRankingPopups();
         this.unsubscribeUserDataChange = dataManager.subscribeUserData(this.onUserDataChanged);
     }
 
@@ -134,16 +139,14 @@ export class HomeView extends BaseUI {
 
         this.resolveNodes();
         this.hideStartupPopups();
+        this.destroyBundledPopupSceneInstances();
         this.ensureChildViewComponents();
         this.bindHomeEntryEvents();
         this.scheduleOnce(this.rebindHomeEntryEvents, 0);
-        await this.preloadRankingPopups();
         await this.setActiveTab(this.currentTab, true);
         this.updateUserInfo();
-        const showedLastWeekRankingPopup = await this.tryShowLastWeekRankingPopupOnceThisWeek();
-        if (!showedLastWeekRankingPopup) {
-            void this.preloadActivityPopups();
-        }
+        this.startPopupWarmup();
+        await this.tryShowLastWeekRankingPopupOnceThisWeek();
         this.entering = false;
     }
 
@@ -190,6 +193,21 @@ export class HomeView extends BaseUI {
     onDailyCheckInButtonClick() {
         console.log('[HomeView] onDailyCheckInButtonClick');
         void this.showDailyCheckInPopup();
+    }
+
+    onFlipRewardButtonClick() {
+        console.log('[HomeView] onFlipRewardButtonClick');
+        void this.findGameView()?.openFlipRewardPopup();
+    }
+
+    onInviteRewardButtonClick() {
+        console.log('[HomeView] onInviteRewardButtonClick');
+        void this.findGameView()?.openInviteRewardPopup();
+    }
+
+    onRankChallengeButtonClick() {
+        console.log('[HomeView] onRankChallengeButtonClick');
+        void this.findGameView()?.openRankChallengePopup();
     }
 
     onRankButtonClick() {
@@ -413,6 +431,21 @@ export class HomeView extends BaseUI {
             'ActivityPanel/NodeActivityItem-003',
             'NodeActivityItem-003'
         ], this.onLevelRewardButtonClick, 'LevelRewardButton', homeRoot);
+        this.bindHomeEntryButton(null, [
+            'GameContainer/GamePanel/RankChallenge',
+            'GamePanel/RankChallenge',
+            'RankChallenge'
+        ], this.onRankChallengeButtonClick, 'RankChallengeButton', homeRoot);
+        this.bindHomeEntryButton(null, [
+            'GameContainer/FunctionPanel/FlipReward',
+            'FunctionPanel/FlipReward',
+            'FlipReward'
+        ], this.onFlipRewardButtonClick, 'FlipRewardButton', homeRoot);
+        this.bindHomeEntryButton(null, [
+            'GameContainer/FunctionPanel/InviteReward',
+            'FunctionPanel/InviteReward',
+            'InviteReward'
+        ], this.onInviteRewardButtonClick, 'InviteRewardButton', homeRoot);
         this.bindHomeEntryButton(this.settingButtonNode, [
             'GameContainer/SettingButton',
             'GameContainer/SettingsPanel/SettingButton',
@@ -465,9 +498,10 @@ export class HomeView extends BaseUI {
             lastTriggerAt = now;
             handler.call(this);
         };
-        buttonNode.on(Node.EventType.TOUCH_END, wrappedHandler, this);
         if (button) {
             buttonNode.on(Button.EventType.CLICK, wrappedHandler, this);
+        } else {
+            buttonNode.on(Node.EventType.TOUCH_END, wrappedHandler, this);
         }
         console.log(`[HomeView] bind entry success: ${debugName} -> ${buttonNode.name} (${source})`);
     }
@@ -475,7 +509,7 @@ export class HomeView extends BaseUI {
     private resolveEntryButtonNodes(assignedNode: Node | null, paths: string[], root: Node): Node[] {
         const nodes: Node[] = [];
         const addNode = (node: Node | null | undefined) => {
-            if (node?.isValid && !nodes.includes(node)) {
+            if (node?.isValid && nodes.indexOf(node) === -1) {
                 nodes.push(node);
             }
         };
@@ -495,7 +529,7 @@ export class HomeView extends BaseUI {
             return;
         }
 
-        if (root.name === name && !nodes.includes(root)) {
+        if (root.name === name && nodes.indexOf(root) === -1) {
             nodes.push(root);
         }
 
@@ -609,6 +643,26 @@ export class HomeView extends BaseUI {
                 this.rankingPopupsPreloadPromise = null;
             }
         }
+    }
+
+    private startPopupWarmup() {
+        if (this.popupWarmupStarted) {
+            return;
+        }
+
+        this.popupWarmupStarted = true;
+        this.scheduleOnce(() => void this.preloadLastWeekRankingPopup(), 0.05);
+        this.scheduleOnce(() => this.findGameView()?.preloadGamePopupNodes(), 0.5);
+        this.scheduleOnce(() => void BundleResourceLoader.preloadBundleAssets('popup_backpack'), 1.0);
+        this.scheduleOnce(() => void BundleResourceLoader.preloadBundleAssets('popup_flip_reward'), 1.6);
+        this.scheduleOnce(() => void BundleResourceLoader.preloadBundleAssets('popup_invite_reward'), 2.2);
+        this.scheduleOnce(() => void BundleResourceLoader.preloadBundleAssets('popup_activity'), 2.8);
+    }
+
+    private async preloadLastWeekRankingPopup() {
+        const popup = await this.getLastWeekRankingPopupLayer(false);
+        await popup?.preload();
+        this.hideRankingPopupNode(popup?.node);
     }
 
     private async doPreloadRankingPopups() {
@@ -737,15 +791,7 @@ export class HomeView extends BaseUI {
             return;
         }
 
-        let current: Node | null = node;
-        while (current) {
-            current.active = true;
-            current = current.parent;
-        }
-
-        if (node.parent?.isValid) {
-            node.setSiblingIndex(node.parent.children.length - 1);
-        }
+        PopupStack.open(node, { hideSiblings: node.parent?.name !== 'Canvas' });
     }
 
     private getCanvasNode(): Node | null {
@@ -794,11 +840,40 @@ export class HomeView extends BaseUI {
         }
     }
 
+    private destroyBundledPopupSceneInstances() {
+        const canvas = this.getHomeCanvasNode();
+        const popupRoot = this.findNodeByPaths(['PopupRoot'], canvas);
+        if (!popupRoot?.isValid) {
+            return;
+        }
+
+        const bundledPopupNames = [
+            'BackPackPopupLayer',
+            'FlipRewardPopupLayer',
+            'InviteRewardPopupLayer',
+            'LevelRewardPopupLayer',
+            'BountyTaskPopupLayer',
+            'ChangeTaskPopupLayer',
+            'DailyCheckInPopupLayer',
+            'RewardPopupLayer',
+        ];
+
+        for (const popupName of bundledPopupNames) {
+            const popupNode = popupRoot.getChildByName(popupName);
+            if (!popupNode?.isValid) {
+                continue;
+            }
+            popupNode.removeFromParent();
+            popupNode.destroy();
+        }
+    }
+
     private hidePopupRoots() {
         const canvas = this.getHomeCanvasNode();
-        for (const rootName of ['PopupRoot', 'SettinsPopupRoot', 'SettingsPopupRoot', 'RewardPoptoRoot']) {
+        for (const rootName of ['PopupRoot', 'GamePopupRoot', 'SettinsPopupRoot', 'SettingsPopupRoot', 'RewardPoptoRoot']) {
             const root = this.findNodeByPaths([rootName], canvas);
             if (root?.isValid) {
+                PopupStack.closeAll(root);
                 root.active = false;
             }
         }
@@ -820,11 +895,6 @@ export class HomeView extends BaseUI {
         }
 
         sys.localStorage.setItem(storageKey, '1');
-        popup.onClosedOnce(() => {
-            this.scheduleOnce(() => {
-                void this.preloadActivityPopups();
-            }, 0);
-        });
         this.scheduleOnce(() => {
             void popup.openAsWeeklyFirstLoginPopup().then(() => {
                 this.activatePopupNode(popup.node);
@@ -957,7 +1027,7 @@ export class HomeView extends BaseUI {
     private getSpriteCandidatePaths(path: string) {
         const cleanPath = this.cleanResourcePath(path);
         if (cleanPath.startsWith('rank/')) {
-            return [`tool/${cleanPath}`, cleanPath];
+            return [`image/${cleanPath}`, cleanPath];
         }
         return [cleanPath];
     }

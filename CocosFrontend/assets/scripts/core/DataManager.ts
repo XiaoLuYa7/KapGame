@@ -576,16 +576,16 @@ export class DataManager {
 
     private getRankIconByCode(rankCode: string): string {
         const rankIcons: Record<string, string> = {
-            BRONZE: 'tool/rank/bronze',
-            SILVER: 'tool/rank/silver',
-            GOLD: 'tool/rank/gold',
-            PLATINUM: 'tool/rank/platinum',
-            DIAMOND: 'tool/rank/diamond',
-            STARSHINE: 'tool/rank/starshine',
-            MASTER: 'tool/rank/master',
-            KING: 'tool/rank/king'
+            BRONZE: 'image/rank/bronze',
+            SILVER: 'image/rank/silver',
+            GOLD: 'image/rank/gold',
+            PLATINUM: 'image/rank/platinum',
+            DIAMOND: 'image/rank/diamond',
+            STARSHINE: 'image/rank/starshine',
+            MASTER: 'image/rank/master',
+            KING: 'image/rank/king'
         };
-        return rankIcons[rankCode] || 'tool/rank/bronze';
+        return rankIcons[rankCode] || 'image/rank/bronze';
     }
 
     private isDevelopmentEnvironment(): boolean {

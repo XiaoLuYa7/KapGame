@@ -14,6 +14,7 @@ import {
 import { BaseUI } from './BaseUI';
 import { Http } from '../network/Http';
 import { dataManager } from '../core/DataManager';
+import { PopupStack } from './PopupStack';
 
 declare const wx: any;
 
@@ -138,12 +139,11 @@ export class WeekRankingPopupLayer extends BaseUI {
                 }
             }
         }
-        this.node.active = true;
-        this.node.setSiblingIndex(this.node.parent ? this.node.parent.children.length - 1 : this.node.getSiblingIndex());
+        PopupStack.open(this.node);
     }
 
     close() {
-        this.node.active = false;
+        PopupStack.close(this.node);
     }
 
     onClickShare() {
@@ -327,7 +327,7 @@ export class WeekRankingPopupLayer extends BaseUI {
             rankInfo: {
                 rankCode: dataManager.userData.rankCode || 'BRONZE',
                 rankName: dataManager.userData.rankName || '青铜',
-                rankIcon: dataManager.userData.rankIcon || 'tool/rank/bronze'
+                rankIcon: dataManager.userData.rankIcon || 'image/rank/bronze'
             },
             groupInfo: {
                 groupId: 10001,
@@ -356,10 +356,10 @@ export class WeekRankingPopupLayer extends BaseUI {
 
     private loadRankTagSprite(rankNo: number, sprite: Sprite) {
         const paths = rankNo === 1
-            ? ['tool/first_tag']
+            ? ['image/first_tag']
             : rankNo === 2
-                ? ['tool/second_tag', 'tool/second_atg']
-                : ['tool/three_tag'];
+                ? ['image/second_tag', 'image/second_atg']
+                : ['image/three_tag'];
 
         this.loadFirstAvailableSpriteFrame(paths, (spriteFrame) => {
             sprite.spriteFrame = spriteFrame;
@@ -517,15 +517,15 @@ export class WeekRankingPopupLayer extends BaseUI {
     private getRankIconCandidatePaths(rankIcon: string) {
         const cleanPath = this.cleanResourcePath(rankIcon);
         if (!cleanPath) {
-            return ['tool/rank/bronze'];
+            return ['image/rank/bronze'];
         }
-        if (cleanPath.startsWith('tool/rank/')) {
+        if (cleanPath.startsWith('image/rank/')) {
             return [cleanPath];
         }
         if (cleanPath.startsWith('rank/')) {
-            return [`tool/${cleanPath}`, cleanPath];
+            return [`image/${cleanPath}`, cleanPath];
         }
-        return [`tool/rank/${cleanPath}`, `rank/${cleanPath}`, cleanPath];
+        return [`image/rank/${cleanPath}`, `rank/${cleanPath}`, cleanPath];
     }
 
     private toSpriteFramePath(path: string) {
@@ -588,7 +588,24 @@ export class WeekRankingPopupLayer extends BaseUI {
         }
 
         layout?.updateLayout();
+        this.configureRigidScrollView();
         this.scrollView?.scrollToTop(0);
+    }
+
+    private configureRigidScrollView() {
+        if (!this.scrollView) {
+            return;
+        }
+
+        this.scrollView.stopAutoScroll();
+        this.scrollView.horizontal = false;
+        this.scrollView.vertical = true;
+        this.scrollView.elastic = false;
+        this.scrollView.bounceDuration = 0;
+        this.scrollView.inertia = true;
+        this.scrollView.horizontalScrollBar = null;
+        this.scrollView.verticalScrollBar = null;
+        this.scrollView.enabled = true;
     }
 
     private setLabelText(root: Node, paths: string[], text: string) {

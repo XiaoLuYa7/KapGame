@@ -1,4 +1,4 @@
-import { _decorator, Component, Button, Label, Color, director, Node, Sprite } from 'cc';
+import { _decorator, Component, Button, Label, Color, director, Node, Sprite, SpriteFrame, resources } from 'cc';
 
 const { ccclass, property } = _decorator;
 
@@ -26,9 +26,14 @@ export class TabBarComponent extends Component {
     ];
 
     private readonly labelColor = new Color(0, 0, 0);
+    private readonly selectedBgPath = 'image/tabbar/tabbar_select_bg/spriteFrame';
+    private readonly unselectedBgPath = 'image/tabbar/tabbar_unselect_bg/spriteFrame';
+    private selectedBgFrame: SpriteFrame | null = null;
+    private unselectedBgFrame: SpriteFrame | null = null;
 
     onLoad() {
         this.resolvePrefabNodes();
+        this.preloadTabBackgrounds();
     }
 
     start() {
@@ -154,7 +159,33 @@ export class TabBarComponent extends Component {
             return;
         }
 
-        sprite.enabled = isSelected;
+        sprite.enabled = true;
+        sprite.sizeMode = Sprite.SizeMode.CUSTOM;
+        const frame = isSelected ? this.selectedBgFrame : this.unselectedBgFrame;
+        if (frame) {
+            sprite.spriteFrame = frame;
+        }
+    }
+
+    private preloadTabBackgrounds() {
+        this.loadTabBackground(this.selectedBgPath, (frame) => {
+            this.selectedBgFrame = frame;
+            this.updateAllTabAppearances();
+        });
+        this.loadTabBackground(this.unselectedBgPath, (frame) => {
+            this.unselectedBgFrame = frame;
+            this.updateAllTabAppearances();
+        });
+    }
+
+    private loadTabBackground(path: string, onLoaded: (frame: SpriteFrame) => void) {
+        resources.load(path, SpriteFrame, (error, frame) => {
+            if (error || !frame) {
+                console.warn(`[TabBar] load tab background failed: ${path}`, error);
+                return;
+            }
+            onLoaded(frame);
+        });
     }
 
     private findChildDeep(name: string, root: Node = this.node): Node | null {

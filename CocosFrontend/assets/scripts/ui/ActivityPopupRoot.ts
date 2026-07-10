@@ -8,7 +8,6 @@ import {
     Layout,
     Node,
     ProgressBar,
-    resources,
     ScrollView,
     Sprite,
     SpriteFrame,
@@ -24,6 +23,8 @@ import { dataManager } from '../core/DataManager';
 import { Http } from '../network/Http';
 import { Platform } from '../utils/Platform';
 import { PopupPrefabLoader } from './PopupPrefabLoader';
+import { PopupStack } from './PopupStack';
+import { BundleResourceLoader } from './BundleResourceLoader';
 
 const { ccclass, property } = _decorator;
 
@@ -169,6 +170,14 @@ export class ActivityPopupRoot extends BaseUI {
     private rewardPopupStarGroupNode: Node | null = null;
     private rewardPopupHaloRingSprite: Node | null = null;
     private rewardPopupLightSprite: Node | null = null;
+    private rewardPopupGetResourceNode: Node | null = null;
+    private rewardPopupFlyNode: Node | null = null;
+    private rewardPopupFlyEffectNode: Node | null = null;
+    private rewardPopupGoldFlyNode: Node | null = null;
+    private rewardPopupDiamondFlyNode: Node | null = null;
+    private rewardPopupGoldFlySprites: Node[] = [];
+    private rewardPopupDiamondFlySprites: Node[] = [];
+    private readonly rewardPopupFlyDefaultPositions = new WeakMap<Node, Vec3>();
     private rewardPopupItemSprite: Sprite | null = null;
     private rewardPopupGoldIcon: Sprite | null = null;
     private rewardPopupDiamondIcon: Sprite | null = null;
@@ -178,10 +187,12 @@ export class ActivityPopupRoot extends BaseUI {
     private rewardPopupPendingReward: RewardPopupPendingReward | null = null;
     private rewardPopupQueue: RewardPopupPendingReward[] = [];
     private rewardPopupClaiming = false;
+    private rewardPopupDelayResourceSync = false;
     private readonly rewardPopupDiamondCost = 20;
     private rewardPopupEffectAssetsPromise: Promise<void> | null = null;
     private rewardPopupHaloSpriteFrame: SpriteFrame | null = null;
     private rewardPopupStarSpriteFrame: SpriteFrame | null = null;
+    private rewardPopupLightSpriteFrame: SpriteFrame | null = null;
     private cachedLevelRewardData: LevelRewardData | null = null;
     private levelRewardDataLoading: Promise<LevelRewardData> | null = null;
     private levelRewardRendered = false;
@@ -264,10 +275,6 @@ export class ActivityPopupRoot extends BaseUI {
         this.hideChangeTaskPopup();
         this.hideDailyCheckInPopup();
         this.hideRewardPopup();
-        void this.ensureActivityPopupPrefabNodes();
-        this.preloadLevelRewardAssets();
-        this.preloadRewardPopupEffectAssets();
-        this.prepareLevelRewardPopup();
         this.unsubscribeUserDataChange = dataManager.subscribeUserData(this.onUserDataChanged);
     }
 
@@ -312,16 +319,15 @@ export class ActivityPopupRoot extends BaseUI {
         this.node.active = true;
         this.bringSelfToFront();
         this.resolveNodes();
-        await this.ensureActivityPopupPrefabNodes();
+        await this.ensureActivityPopupPrefabNodes(['LevelRewardPopupLayer']);
         this.bindActivityPopupRuntimeEvents();
         if (!this.levelRewardPopupLayer?.isValid) {
             console.warn('[ActivityPopupRoot] LevelRewardPopupLayer not found');
             return;
         }
 
-        this.levelRewardPopupLayer.active = true;
+        PopupStack.open(this.levelRewardPopupLayer);
         this.ensureBlockInputEvents(this.levelRewardPopupLayer);
-        this.levelRewardPopupLayer.setSiblingIndex(this.node.children.length - 1);
 
         if (!this.levelRewardRendered) {
             const data = this.getImmediateLevelRewardData();
@@ -333,7 +339,7 @@ export class ActivityPopupRoot extends BaseUI {
     hideLevelRewardPopup() {
         this.resolveNodes();
         if (this.levelRewardPopupLayer?.isValid) {
-            this.levelRewardPopupLayer.active = false;
+            PopupStack.close(this.levelRewardPopupLayer);
         }
     }
 
@@ -345,16 +351,15 @@ export class ActivityPopupRoot extends BaseUI {
         this.node.active = true;
         this.bringSelfToFront();
         this.resolveNodes();
-        await this.ensureActivityPopupPrefabNodes();
+        await this.ensureActivityPopupPrefabNodes(['BountyTaskPopupLayer']);
         this.bindActivityPopupRuntimeEvents();
         if (!this.bountyTaskPopupLayer?.isValid) {
             console.warn('[ActivityPopupRoot] BountyTaskPopupLayer not found');
             return;
         }
 
-        this.bountyTaskPopupLayer.active = true;
+        PopupStack.open(this.bountyTaskPopupLayer);
         this.ensureBlockInputEvents(this.bountyTaskPopupLayer);
-        this.bountyTaskPopupLayer.setSiblingIndex(this.node.children.length - 1);
         await this.loadBountyTaskButtonSpriteFrames();
 
         const data = await this.loadBountyTaskData();
@@ -366,7 +371,7 @@ export class ActivityPopupRoot extends BaseUI {
         this.unschedule(this.updateBountyTaskCountdowns);
         this.hideChangeTaskPopup();
         if (this.bountyTaskPopupLayer?.isValid) {
-            this.bountyTaskPopupLayer.active = false;
+            PopupStack.close(this.bountyTaskPopupLayer);
         }
     }
 
@@ -378,16 +383,15 @@ export class ActivityPopupRoot extends BaseUI {
         this.node.active = true;
         this.bringSelfToFront();
         this.resolveNodes();
-        await this.ensureActivityPopupPrefabNodes();
+        await this.ensureActivityPopupPrefabNodes(['DailyCheckInPopupLayer']);
         this.bindActivityPopupRuntimeEvents();
         if (!this.dailyCheckInPopupLayer?.isValid) {
             console.warn('[ActivityPopupRoot] DailyCheckInPopupLayer not found');
             return;
         }
 
-        this.dailyCheckInPopupLayer.active = true;
+        PopupStack.open(this.dailyCheckInPopupLayer);
         this.ensureBlockInputEvents(this.dailyCheckInPopupLayer);
-        this.dailyCheckInPopupLayer.setSiblingIndex(this.node.children.length - 1);
         console.log('[ActivityPopupRoot] showDailyCheckInPopup active', {
             rootActive: this.node.active,
             layerActive: this.dailyCheckInPopupLayer.active,
@@ -400,7 +404,7 @@ export class ActivityPopupRoot extends BaseUI {
     hideDailyCheckInPopup() {
         this.resolveNodes();
         if (this.dailyCheckInPopupLayer?.isValid) {
-            this.dailyCheckInPopupLayer.active = false;
+            PopupStack.close(this.dailyCheckInPopupLayer);
         }
     }
 
@@ -438,7 +442,7 @@ export class ActivityPopupRoot extends BaseUI {
         this.node.active = true;
         this.bringSelfToFront();
         this.resolveNodes();
-        await this.ensureActivityPopupPrefabNodes();
+        await this.ensureActivityPopupPrefabNodes(['ChangeTaskPopupLayer']);
         this.bindActivityPopupRuntimeEvents();
         if (!this.changeTaskPopupLayer?.isValid) {
             console.warn('[ActivityPopupRoot] ChangeTaskPopupLayer not found');
@@ -446,15 +450,14 @@ export class ActivityPopupRoot extends BaseUI {
         }
 
         this.setBountyTaskBackgroundSpriteEnabled(false);
-        this.changeTaskPopupLayer.active = true;
+        PopupStack.open(this.changeTaskPopupLayer, { hideSiblings: false });
         this.ensureBlockInputEvents(this.changeTaskPopupLayer);
-        this.changeTaskPopupLayer.setSiblingIndex(this.node.children.length - 1);
     }
 
     hideChangeTaskPopup() {
         this.resolveNodes();
         if (this.changeTaskPopupLayer?.isValid) {
-            this.changeTaskPopupLayer.active = false;
+            PopupStack.close(this.changeTaskPopupLayer);
         }
         this.setBountyTaskBackgroundSpriteEnabled(true);
     }
@@ -1052,11 +1055,11 @@ export class ActivityPopupRoot extends BaseUI {
 
     private async loadBountyTaskButtonSpriteFrames() {
         const [yellow, gray, blue, completed, unfinished] = await Promise.all([
-            this.loadSpriteFrame('tool/glodtask/yellow_button/spriteFrame'),
-            this.loadSpriteFrame('tool/glodtask/gray_button/spriteFrame'),
-            this.loadSpriteFrame('tool/glodtask/blue_button/spriteFrame'),
-            this.loadSpriteFrame('tool/glodtask/completed/spriteFrame'),
-            this.loadSpriteFrame('tool/glodtask/unfinished/spriteFrame')
+            this.loadSpriteFrame('image/glodtask/yellow_button/spriteFrame'),
+            this.loadSpriteFrame('image/glodtask/gray_button/spriteFrame'),
+            this.loadSpriteFrame('image/glodtask/blue_button/spriteFrame'),
+            this.loadSpriteFrame('image/glodtask/completed/spriteFrame'),
+            this.loadSpriteFrame('image/glodtask/unfinished/spriteFrame')
         ]);
         this.bountyTaskYellowButtonSpriteFrame = yellow;
         this.bountyTaskGrayButtonSpriteFrame = gray;
@@ -1281,7 +1284,7 @@ export class ActivityPopupRoot extends BaseUI {
 
     private getNextMockDailyCheckInClaimableDayIndex(claimedDays: number[], todayIndex: number): number {
         for (let dayIndex = 1; dayIndex <= todayIndex; dayIndex++) {
-            if (!claimedDays.includes(dayIndex)) {
+            if (claimedDays.indexOf(dayIndex) < 0) {
                 return dayIndex;
             }
         }
@@ -1326,7 +1329,7 @@ export class ActivityPopupRoot extends BaseUI {
                 dayIndex,
                 rewardType: 'GOLD',
                 rewardCount,
-                claimed: claimedDays.includes(dayIndex),
+                claimed: claimedDays.indexOf(dayIndex) >= 0,
                 claimable: dayIndex === nextClaimableDayIndex
             };
         });
@@ -1693,10 +1696,7 @@ export class ActivityPopupRoot extends BaseUI {
         const claimed = reward.claimed === true;
         buttonNode.active = canClaim || claimed;
 
-        const sprite = buttonNode.getComponent(Sprite);
-        if (sprite) {
-            sprite.spriteFrame = claimed ? this.receivedSpriteFrame : this.receiveSpriteFrame;
-        }
+        this.applyRewardReceiveButtonSprite(buttonNode, claimed);
         this.setRewardReceiveButtonLabelByType(buttonNode, reward.rewardType, canClaim, claimed);
 
         const button = buttonNode.getComponent(Button);
@@ -1708,6 +1708,30 @@ export class ActivityPopupRoot extends BaseUI {
             buttonNode.on(Button.EventType.CLICK, () => {
                 this.showRewardPopupForLevelReward(reward);
             }, this);
+        }
+    }
+
+    private applyRewardReceiveButtonSprite(buttonNode: Node | null, claimed: boolean) {
+        if (!buttonNode) {
+            return;
+        }
+
+        const spriteFrame = claimed ? this.receivedSpriteFrame : this.receiveSpriteFrame;
+        if (!spriteFrame) {
+            return;
+        }
+
+        const sprite = buttonNode.getComponent(Sprite);
+        if (sprite) {
+            sprite.spriteFrame = spriteFrame;
+        }
+
+        const button = buttonNode.getComponent(Button);
+        if (button) {
+            button.normalSprite = spriteFrame;
+            button.hoverSprite = spriteFrame;
+            button.pressedSprite = spriteFrame;
+            button.disabledSprite = spriteFrame;
         }
     }
 
@@ -1821,23 +1845,29 @@ export class ActivityPopupRoot extends BaseUI {
         void this.showRewardPopup(firstPending);
     }
 
-    private showRewardPopupForDailyCheckIn() {
+    private async showRewardPopupForDailyCheckIn() {
         if (!this.dailyCheckInData) {
+            const data = await this.loadDailyCheckInData();
+            this.renderDailyCheckInData(data);
+        }
+
+        const dailyCheckInData = this.dailyCheckInData;
+        if (!dailyCheckInData) {
             return;
         }
 
-        if (this.dailyCheckInData.todayClaimed) {
+        if (dailyCheckInData.todayClaimed) {
             Platform.showToast('今日已领取', 'none');
             return;
         }
 
-        const reward = this.getDailyCheckInClaimReward(this.dailyCheckInData);
+        const reward = this.getDailyCheckInClaimReward(dailyCheckInData);
         if (!reward) {
             Platform.showToast('暂无可领取奖励', 'none');
             return;
         }
 
-        void this.showRewardPopup({
+        await this.showRewardPopup({
             source: 'dailyCheckIn',
             rewardType: reward.rewardType || 'GOLD',
             rewardCount: reward.rewardCount,
@@ -1861,12 +1891,8 @@ export class ActivityPopupRoot extends BaseUI {
     }
 
     private async showRewardPopup(pending: RewardPopupPendingReward) {
+        await this.ensureRewardPopupLayer();
         this.resolveRewardPopupNodes();
-        if (!this.rewardPopupLayer?.isValid) {
-            await PopupPrefabLoader.ensurePopupNode(this.node, 'RewardPopupLayer');
-            this.resolveRewardPopupNodes();
-        }
-
         if (!this.rewardPopupRoot?.isValid || !this.rewardPopupLayer?.isValid) {
             console.warn('[ActivityPopupRoot] Reward receive popup not found');
             return;
@@ -1883,26 +1909,26 @@ export class ActivityPopupRoot extends BaseUI {
             rewardCount
         };
         this.rewardPopupClaiming = false;
+        this.rewardPopupDelayResourceSync = false;
         this.rewardPopupRoot.active = true;
         this.rewardPopupLayer.active = true;
+        this.setRewardPopupClaimVisualMode(false);
         this.ensureBlockInputEvents(this.rewardPopupLayer);
         if (this.rewardPopupRoot.parent) {
             this.rewardPopupRoot.setSiblingIndex(this.rewardPopupRoot.parent.children.length - 1);
         }
 
-        this.setLabelString(this.rewardPopupLayer, ['PopupPanel/ResourcesPanel/DiamondPanel/DiamondLabel'], String(dataManager.userData.diamond || 0));
-        this.setLabelString(this.rewardPopupLayer, ['PopupPanel/ResourcesPanel/GoldPanel/GoldLabel'], String(dataManager.userData.gold || 0));
-        this.setLabelString(this.rewardPopupLayer, ['PopupPanel/RewardNode/DescNode/CountLabel'], String(rewardCount));
-        this.setLabelString(this.rewardPopupLayer, ['PopupPanel/RewardNode/DescNode/NameLabel'], rewardName);
-        this.setLabelString(this.rewardPopupLayer, ['PopupPanel/ButtonsNode/StandardButton/Label'], '普通领取');
-        this.setLabelString(this.rewardPopupLayer, ['PopupPanel/ButtonsNode/DoubleButton/Label'], '双倍领取');
+        this.setLabelString(this.rewardPopupLayer, ['PopupPanel/FlyNode/ResourcesPanel/DiamondPanel/DiamondLabel'], String(dataManager.userData.diamond || 0));
+        this.setLabelString(this.rewardPopupLayer, ['PopupPanel/FlyNode/ResourcesPanel/GoldPanel/GoldLabel'], String(dataManager.userData.gold || 0));
+        this.setLabelString(this.rewardPopupLayer, ['PopupPanel/GetResourceNode/RewardNode/DescNode/CountLabel'], String(rewardCount));
+        this.setLabelString(this.rewardPopupLayer, ['PopupPanel/GetResourceNode/RewardNode/DescNode/NameLabel'], rewardName);
+        this.setLabelString(this.rewardPopupLayer, ['PopupPanel/GetResourceNode/ButtonsNode/StandardButton/Label'], '普通领取');
+        this.setLabelString(this.rewardPopupLayer, ['PopupPanel/GetResourceNode/ButtonsNode/DoubleButton/Label'], '双倍领取');
         this.setLabelString(this.rewardPopupLayer, [
-            'PopupPanel/ButtonsNode/FiveTimesNode/Label',
-            'PopupPanel/ButtonsNode/TenTimeButton/Label'
+            'PopupPanel/GetResourceNode/ButtonsNode/FiveTimesNode/Label'
         ], '5倍领取');
         this.setLabelString(this.rewardPopupLayer, [
-            'PopupPanel/ButtonsNode/FiveTimesNode/RewardNode/CountLabel',
-            'PopupPanel/ButtonsNode/TenTimeButton/RewardNode/CountLabel'
+            'PopupPanel/GetResourceNode/ButtonsNode/FiveTimesNode/RewardNode/CountLabel'
         ], String(this.rewardPopupDiamondCost));
         if (this.rewardPopupTenTimeButton?.isValid) {
             this.rewardPopupTenTimeButton.active = canUseDiamondMultiplier;
@@ -1915,6 +1941,19 @@ export class ActivityPopupRoot extends BaseUI {
         this.applyRewardPopupIcon(rewardType);
         this.prepareRewardPopupEffectSprites();
         this.playRewardPopupEffects();
+    }
+
+    private async ensureRewardPopupLayer() {
+        this.resolveRewardPopupNodes();
+        if (this.rewardPopupRoot?.isValid && this.rewardPopupLayer?.isValid) {
+            return;
+        }
+
+        const rewardPopupLayer = await PopupPrefabLoader.ensurePopupNode(this.node, 'RewardPopupLayer');
+        if (rewardPopupLayer?.isValid) {
+            this.rewardPopupLayer = rewardPopupLayer;
+            this.rewardPopupRoot = rewardPopupLayer;
+        }
     }
 
     private hideRewardPopup(clearQueue: boolean = true) {
@@ -1936,6 +1975,7 @@ export class ActivityPopupRoot extends BaseUI {
         }
         this.rewardPopupPendingReward = null;
         this.rewardPopupClaiming = false;
+        this.rewardPopupDelayResourceSync = false;
         setTimeout(() => this.stopRewardPopupEffects(), 0);
     }
 
@@ -1978,9 +2018,11 @@ export class ActivityPopupRoot extends BaseUI {
 
         this.rewardPopupClaiming = true;
         this.setRewardPopupButtonsInteractable(false);
+        this.rewardPopupDelayResourceSync = true;
         if (requireAd) {
             const watched = await Platform.showRewardedVideoAd();
             if (!watched) {
+                this.rewardPopupDelayResourceSync = false;
                 this.rewardPopupClaiming = false;
                 this.setRewardPopupButtonsInteractable(true);
                 Platform.showToast('完整观看广告后可领取', 'none');
@@ -1988,21 +2030,28 @@ export class ActivityPopupRoot extends BaseUI {
             }
         }
 
-        this.hideRewardPopup(false);
+        this.setRewardPopupClaimVisualMode(true);
         const rollbackOptimisticClaim = this.applyOptimisticLevelRewardClaim(pending);
-        await this.waitForPopupCloseFrame();
-        this.showRewardClaimSuccessToast(pending);
-        await this.waitForNextFrame();
         const claimed = await this.claimRewardPopupPendingReward(pending, multiplier, diamondCost);
         if (!claimed) {
+            this.setRewardPopupClaimVisualMode(false);
+            this.rewardPopupDelayResourceSync = false;
             rollbackOptimisticClaim?.();
             this.rewardPopupClaiming = false;
             this.setRewardPopupButtonsInteractable(true);
+            this.syncRewardPopupResourceLabels();
+            this.syncAccountResourceLabels();
             return;
         }
 
+        await this.playRewardPopupClaimAnimation(pending.rewardType);
+        this.rewardPopupDelayResourceSync = false;
         this.syncRewardPopupResourceLabels();
         this.syncAccountResourceLabels();
+        await this.waitForRewardPopupCloseDelay();
+        this.hideRewardPopup(false);
+        this.showRewardClaimSuccessToast(pending);
+        await this.waitForPopupCloseFrame();
         const nextPending = this.rewardPopupQueue.shift();
         if (nextPending) {
             void this.showRewardPopup(nextPending);
@@ -2016,6 +2065,10 @@ export class ActivityPopupRoot extends BaseUI {
     private async waitForPopupCloseFrame(): Promise<void> {
         await this.waitForNextFrame();
         await this.waitForNextFrame();
+    }
+
+    private waitForRewardPopupCloseDelay(): Promise<void> {
+        return new Promise(resolve => this.scheduleOnce(() => resolve(), 0.2));
     }
 
     private setRewardPopupButtonsInteractable(interactable: boolean) {
@@ -2092,6 +2145,19 @@ export class ActivityPopupRoot extends BaseUI {
         }
     }
 
+    private refreshVisibleLevelRewardButtons() {
+        const rewards = this.cachedLevelRewardData?.rewards ?? [];
+        if (!this.rewardContent?.isValid || rewards.length <= 0) {
+            return;
+        }
+
+        rewards.forEach((reward, index) => {
+            const item = this.rewardContent?.getChildByName(`${this.generatedRewardItemPrefix}_${index + 1}`);
+            const buttonNode = item?.getChildByName('ReceiveButton') ?? null;
+            this.applyRewardReceiveButtonSprite(buttonNode, reward.claimed === true);
+        });
+    }
+
     private showRewardClaimSuccessToast(pending: RewardPopupPendingReward) {
         switch (pending.source) {
             case 'dailyCheckIn':
@@ -2103,6 +2169,183 @@ export class ActivityPopupRoot extends BaseUI {
             default:
                 Platform.showToast('领取成功', 'success');
         }
+    }
+
+    private playRewardPopupClaimAnimation(rewardTypeValue: string): Promise<void> {
+        return new Promise(resolve => {
+            const popupLayer = this.rewardPopupLayer;
+            const itemNode = this.rewardPopupItemSprite?.node ?? null;
+            if (!popupLayer?.isValid || !itemNode?.isValid) {
+                resolve();
+                return;
+            }
+
+            const rewardType = this.normalizeRewardType(rewardTypeValue);
+            const itemOpacity = itemNode.getComponent(UIOpacity) ?? itemNode.addComponent(UIOpacity);
+
+            const buttonsNode = this.findNodeByPaths(['PopupPanel/GetResourceNode/ButtonsNode'], popupLayer);
+            const titleNode = this.findNodeByPaths(['PopupPanel/GetResourceNode/TitleLabel'], popupLayer);
+            const descNode = this.findNodeByPaths(['PopupPanel/GetResourceNode/RewardNode/DescNode'], popupLayer);
+            for (const node of [buttonsNode, titleNode, descNode]) {
+                if (!node?.isValid) {
+                    continue;
+                }
+                const opacity = node.getComponent(UIOpacity) ?? node.addComponent(UIOpacity);
+                Tween.stopAllByTarget(node);
+                Tween.stopAllByTarget(opacity);
+                tween(opacity).to(0.12, { opacity: 0 }, { easing: 'quadOut' }).start();
+            }
+
+            const flyNodes = rewardType === 'DIAMOND'
+                ? this.rewardPopupDiamondFlySprites
+                : this.rewardPopupGoldFlySprites;
+            const activeFlyGroup = rewardType === 'DIAMOND'
+                ? this.rewardPopupDiamondFlyNode
+                : this.rewardPopupGoldFlyNode;
+            const inactiveFlyGroup = rewardType === 'DIAMOND'
+                ? this.rewardPopupGoldFlyNode
+                : this.rewardPopupDiamondFlyNode;
+
+            Tween.stopAllByTarget(itemNode);
+            Tween.stopAllByTarget(itemOpacity);
+            tween(itemNode)
+                .to(0.12, { scale: new Vec3(0.82, 0.82, 1) }, { easing: 'quadOut' })
+                .start();
+            tween(itemOpacity)
+                .to(0.12, { opacity: 0 }, { easing: 'quadOut' })
+                .start();
+
+            if (flyNodes.length <= 0 || !activeFlyGroup?.isValid) {
+                tween(itemOpacity)
+                    .delay(0.22)
+                    .call(() => resolve())
+                    .start();
+                return;
+            }
+
+            if (this.rewardPopupFlyEffectNode?.isValid) {
+                this.rewardPopupFlyEffectNode.active = true;
+            }
+            activeFlyGroup.active = true;
+            if (inactiveFlyGroup?.isValid) {
+                inactiveFlyGroup.active = false;
+            }
+
+            const parentNode = activeFlyGroup;
+            const parentTransform = parentNode.getComponent(UITransform);
+            const targetNode = this.findRewardPopupResourceTargetNode(rewardType);
+            const targetWorld = targetNode?.getWorldPosition() ?? parentNode.getWorldPosition();
+            const target = parentTransform?.convertToNodeSpaceAR(targetWorld) ?? new Vec3(0, 260, 0);
+
+            let completed = 0;
+            const finishOne = () => {
+                completed += 1;
+                if (completed >= flyNodes.length) {
+                    this.resetRewardPopupFlyNodes(flyNodes, activeFlyGroup);
+                    resolve();
+                }
+            };
+
+            flyNodes.forEach((particle, index) => {
+                if (!particle?.isValid) {
+                    finishOne();
+                    return;
+                }
+
+                const defaultPosition = this.getRewardPopupFlyDefaultPosition(particle);
+                const offset = defaultPosition;
+                const opacity = particle.getComponent(UIOpacity) ?? particle.addComponent(UIOpacity);
+                const gatherPosition = new Vec3(offset.x, offset.y, 0);
+                opacity.opacity = 0;
+                particle.setPosition(gatherPosition);
+                particle.active = true;
+
+                tween(opacity)
+                    .to(0.3, { opacity: 255 }, { easing: 'quadOut' })
+                    .delay(0.72)
+                    .to(0.16, { opacity: 0 }, { easing: 'quadIn' })
+                    .start();
+
+                tween(particle)
+                    .delay(0.6)
+                    .to(0.52, {
+                        position: target
+                    }, { easing: 'sineInOut' })
+                    .call(() => {
+                        particle.active = false;
+                        particle.setPosition(defaultPosition);
+                        finishOne();
+                    })
+                    .start();
+            });
+        });
+    }
+
+    private getRewardPopupFlyDefaultPosition(node: Node): Vec3 {
+        let position = this.rewardPopupFlyDefaultPositions.get(node);
+        if (!position) {
+            position = node.position.clone();
+            this.rewardPopupFlyDefaultPositions.set(node, position);
+        }
+        return position.clone();
+    }
+
+    private resetRewardPopupFlyNodes(nodes: Node[], groupNode?: Node | null) {
+        for (const node of nodes) {
+            if (!node?.isValid) {
+                continue;
+            }
+
+            Tween.stopAllByTarget(node);
+            const opacity = node.getComponent(UIOpacity);
+            if (opacity) {
+                Tween.stopAllByTarget(opacity);
+                opacity.opacity = 0;
+            }
+
+            node.setPosition(this.getRewardPopupFlyDefaultPosition(node));
+            node.active = false;
+        }
+
+        if (groupNode?.isValid) {
+            groupNode.active = false;
+        }
+    }
+
+    private setRewardPopupClaimVisualMode(claiming: boolean) {
+        if (this.rewardPopupGetResourceNode?.isValid) {
+            this.rewardPopupGetResourceNode.active = !claiming;
+        }
+
+        if (claiming && this.rewardPopupFlyNode?.isValid) {
+            this.rewardPopupFlyNode.active = true;
+        }
+
+        if (this.rewardPopupFlyEffectNode?.isValid) {
+            this.rewardPopupFlyEffectNode.active = claiming;
+        }
+
+        if (!claiming) {
+            this.resetRewardPopupFlyNodes(this.rewardPopupGoldFlySprites, this.rewardPopupGoldFlyNode);
+            this.resetRewardPopupFlyNodes(this.rewardPopupDiamondFlySprites, this.rewardPopupDiamondFlyNode);
+        }
+    }
+
+    private findRewardPopupResourceTargetNode(rewardType: string): Node | null {
+        if (!this.rewardPopupLayer?.isValid) {
+            return null;
+        }
+
+        const paths = rewardType === 'DIAMOND'
+            ? [
+                'PopupPanel/FlyNode/ResourcesPanel/DiamondPanel/DiamondIcon',
+                'PopupPanel/FlyNode/ResourcesPanel/DiamondPanel'
+            ]
+            : [
+                'PopupPanel/FlyNode/ResourcesPanel/GoldPanel/GoldIcon',
+                'PopupPanel/FlyNode/ResourcesPanel/GoldPanel'
+            ];
+        return this.findNodeByPaths(paths, this.rewardPopupLayer);
     }
 
     private async claimRewardPopupPendingReward(
@@ -2196,11 +2439,15 @@ export class ActivityPopupRoot extends BaseUI {
             return;
         }
 
-        this.setLabelString(this.rewardPopupLayer, ['PopupPanel/ResourcesPanel/DiamondPanel/DiamondLabel'], String(dataManager.userData.diamond || 0));
-        this.setLabelString(this.rewardPopupLayer, ['PopupPanel/ResourcesPanel/GoldPanel/GoldLabel'], String(dataManager.userData.gold || 0));
+        this.setLabelString(this.rewardPopupLayer, ['PopupPanel/FlyNode/ResourcesPanel/DiamondPanel/DiamondLabel'], String(dataManager.userData.diamond || 0));
+        this.setLabelString(this.rewardPopupLayer, ['PopupPanel/FlyNode/ResourcesPanel/GoldPanel/GoldLabel'], String(dataManager.userData.gold || 0));
     }
 
     private onUserDataChanged = () => {
+        if (this.rewardPopupDelayResourceSync) {
+            return;
+        }
+
         this.syncRewardPopupResourceLabels();
         this.syncAccountResourceLabels();
     };
@@ -2310,6 +2557,11 @@ export class ActivityPopupRoot extends BaseUI {
             haloSprite.spriteFrame = this.rewardPopupHaloSpriteFrame;
         }
 
+        const lightSprite = this.rewardPopupLightSprite?.getComponent(Sprite) ?? null;
+        if (lightSprite && this.rewardPopupLightSpriteFrame) {
+            lightSprite.spriteFrame = this.rewardPopupLightSpriteFrame;
+        }
+
         const stars = this.ensureRewardPopupStarNodes();
         stars.forEach(star => {
             const starSprite = star.getComponent(Sprite) ?? star.addComponent(Sprite);
@@ -2327,72 +2579,62 @@ export class ActivityPopupRoot extends BaseUI {
             return [];
         }
 
-        const existingStars = starRoot.children.filter(star => !!star.getComponent(Sprite));
-        if (existingStars.length > 0) {
-            return existingStars;
-        }
-
-        const positions = [
-            new Vec3(-82, 36, 0),
-            new Vec3(82, 38, 0),
-            new Vec3(-58, -50, 0),
-            new Vec3(66, -46, 0),
-            new Vec3(0, 86, 0),
-            new Vec3(2, -84, 0)
-        ];
-
-        return positions.map((position, index) => {
-            const star = new Node(`GeneratedRewardStar_${index + 1}`);
-            star.setPosition(position);
-            const transform = star.addComponent(UITransform);
-            transform.setContentSize(34, 34);
-            star.addComponent(Sprite);
-            star.addComponent(UIOpacity);
-            starRoot.addChild(star);
-            return star;
-        });
+        return starRoot.children.filter(star => !!star.getComponent(Sprite));
     }
 
     private playRewardPopupEffects() {
         this.stopRewardPopupEffects();
 
         const itemNode = this.rewardPopupItemSprite?.node ?? null;
+        const titleNode = this.findNodeByPaths(['PopupPanel/GetResourceNode/TitleLabel'], this.rewardPopupLayer);
+        const buttonsNode = this.findNodeByPaths(['PopupPanel/GetResourceNode/ButtonsNode'], this.rewardPopupLayer);
+        const descNode = this.findNodeByPaths(['PopupPanel/GetResourceNode/RewardNode/DescNode'], this.rewardPopupLayer);
+
+        for (const node of [titleNode, buttonsNode, descNode]) {
+            if (!node?.isValid) {
+                continue;
+            }
+            const opacity = node.getComponent(UIOpacity) ?? node.addComponent(UIOpacity);
+            opacity.opacity = 0;
+            const targetScale = node === buttonsNode ? new Vec3(1, 1, 1) : new Vec3(1, 1, 1);
+            node.setScale(new Vec3(0.92, 0.92, 1));
+            tween(node)
+                .delay(node === buttonsNode ? 0.12 : 0.02)
+                .to(0.18, { scale: targetScale }, { easing: 'backOut' })
+                .start();
+            tween(opacity)
+                .delay(node === buttonsNode ? 0.12 : 0.02)
+                .to(0.14, { opacity: 255 }, { easing: 'quadOut' })
+                .start();
+        }
 
         if (itemNode?.isValid) {
             itemNode.active = true;
-            itemNode.setScale(new Vec3(0.72, 0.72, 1));
+            itemNode.setScale(new Vec3(0.7, 0.7, 1));
 
             const itemOpacity = itemNode.getComponent(UIOpacity) ?? itemNode.addComponent(UIOpacity);
             itemOpacity.opacity = 0;
 
             tween(itemNode)
-                .to(0.18, { scale: new Vec3(1.1, 1.1, 1) }, { easing: 'backOut' })
+                .to(0.2, { scale: new Vec3(1.08, 1.08, 1) }, { easing: 'backOut' })
                 .to(0.12, { scale: new Vec3(1, 1, 1) }, { easing: 'quadOut' })
+                .repeatForever(
+                    tween()
+                        .to(0.9, { scale: new Vec3(1.04, 1.04, 1) }, { easing: 'sineInOut' })
+                        .to(0.9, { scale: new Vec3(1, 1, 1) }, { easing: 'sineInOut' })
+                )
                 .start();
             tween(itemOpacity)
                 .to(0.12, { opacity: 255 }, { easing: 'quadOut' })
                 .start();
         }
 
-        const getItemCenterInParent = (parentNode: Node | null): Vec3 => {
-            if (!itemNode?.isValid || !parentNode?.isValid) {
-                return new Vec3(0, 0, 0);
-            }
-
-            const parentTransform = parentNode.getComponent(UITransform);
-            if (!parentTransform) {
-                return new Vec3(0, 0, 0);
-            }
-
-            return parentTransform.convertToNodeSpaceAR(itemNode.getWorldPosition());
-        };
-
-        this.playRewardPopupHaloEffect(getItemCenterInParent);
-        this.playRewardPopupLightEffect(getItemCenterInParent);
-        this.playRewardPopupStarBurst(getItemCenterInParent);
+        this.playRewardPopupHaloEffect();
+        this.playRewardPopupLightEffect();
+        this.playRewardPopupStarBurst();
     }
 
-    private playRewardPopupHaloEffect(getItemCenterInParent: (parentNode: Node | null) => Vec3) {
+    private playRewardPopupHaloEffect() {
         if (!this.rewardPopupHaloRingSprite?.isValid) {
             return;
         }
@@ -2400,32 +2642,30 @@ export class ActivityPopupRoot extends BaseUI {
         const haloNode = this.rewardPopupHaloRingSprite;
         const haloOpacity = haloNode.getComponent(UIOpacity) ?? haloNode.addComponent(UIOpacity);
         haloNode.active = true;
-        haloNode.setPosition(getItemCenterInParent(haloNode.parent ?? null));
         haloNode.angle = -4;
-        haloNode.setScale(new Vec3(1.04, 1.04, 1));
+        haloNode.setScale(new Vec3(0.42, 0.42, 1));
         haloOpacity.opacity = 0;
 
         tween(haloNode)
-            .to(0.12, {
-                scale: new Vec3(0.96, 0.96, 1),
-                angle: 4
-            }, { easing: 'quadOut' })
-            .delay(0.12)
-            .call(() => {
-                if (haloNode.isValid) {
-                    haloNode.active = false;
-                }
-            })
+            .repeatForever(
+                tween()
+                    .to(1.2, {
+                        scale: new Vec3(0.46, 0.46, 1),
+                        angle: 8
+                    }, { easing: 'sineInOut' })
+                    .to(1.2, {
+                        scale: new Vec3(0.42, 0.42, 1),
+                        angle: -4
+                    }, { easing: 'sineInOut' })
+            )
             .start();
 
         tween(haloOpacity)
-            .to(0.05, { opacity: 150 }, { easing: 'quadOut' })
-            .delay(0.09)
-            .to(0.1, { opacity: 0 }, { easing: 'quadIn' })
+            .to(0.2, { opacity: 48 }, { easing: 'quadOut' })
             .start();
     }
 
-    private playRewardPopupLightEffect(getItemCenterInParent: (parentNode: Node | null) => Vec3) {
+    private playRewardPopupLightEffect() {
         if (!this.rewardPopupLightSprite?.isValid) {
             return;
         }
@@ -2433,31 +2673,28 @@ export class ActivityPopupRoot extends BaseUI {
         const lightNode = this.rewardPopupLightSprite;
         const lightOpacity = lightNode.getComponent(UIOpacity) ?? lightNode.addComponent(UIOpacity);
         lightNode.active = true;
-        lightNode.setPosition(getItemCenterInParent(lightNode.parent ?? null));
         lightNode.angle = 0;
-        lightNode.setScale(new Vec3(0.82, 0.82, 1));
+        lightNode.setScale(new Vec3(1, 1, 1));
         lightOpacity.opacity = 0;
 
         tween(lightNode)
-            .to(0.54, {
-                scale: new Vec3(1.05, 1.05, 1),
-                angle: 16
-            }, { easing: 'quadOut' })
-            .call(() => {
-                if (lightNode.isValid) {
-                    lightNode.active = false;
-                }
-            })
+            .repeatForever(
+                tween()
+                    .to(4.8, {
+                        angle: 18
+                    }, { easing: 'linear' })
+                    .to(4.8, {
+                        angle: 36
+                    }, { easing: 'linear' })
+            )
             .start();
 
         tween(lightOpacity)
-            .to(0.1, { opacity: 120 }, { easing: 'quadOut' })
-            .delay(0.18)
-            .to(0.26, { opacity: 0 }, { easing: 'quadOut' })
+            .to(0.18, { opacity: 185 }, { easing: 'quadOut' })
             .start();
     }
 
-    private playRewardPopupStarBurst(getItemCenterInParent: (parentNode: Node | null) => Vec3) {
+    private playRewardPopupStarBurst() {
         const starRoot = this.rewardPopupStarGroupNode?.isValid
             ? this.rewardPopupStarGroupNode
             : this.rewardPopupStarEffectNode;
@@ -2465,70 +2702,83 @@ export class ActivityPopupRoot extends BaseUI {
             return;
         }
 
-        this.liftRewardPopupStarsAboveItem(starRoot);
         if (this.rewardPopupStarEffectNode?.isValid) {
             this.rewardPopupStarEffectNode.active = true;
         }
         starRoot.active = true;
 
-        const centerPos = getItemCenterInParent(starRoot);
         const stars = this.ensureRewardPopupStarNodes();
         const paths = [
-            { start: new Vec3(-18, 10, 0), end: new Vec3(-96, 54, 0), scale: 0.88, angle: -38 },
-            { start: new Vec3(18, 12, 0), end: new Vec3(96, 58, 0), scale: 0.82, angle: 35 },
-            { start: new Vec3(-16, -8, 0), end: new Vec3(-78, -48, 0), scale: 0.72, angle: 28 },
-            { start: new Vec3(16, -10, 0), end: new Vec3(82, -42, 0), scale: 0.76, angle: -30 },
-            { start: new Vec3(-2, 18, 0), end: new Vec3(-10, 94, 0), scale: 0.66, angle: 46 },
-            { start: new Vec3(2, -16, 0), end: new Vec3(8, -82, 0), scale: 0.62, angle: -45 }
+            { scale: 0.5, angle: -18 },
+            { scale: 0.46, angle: 16 },
+            { scale: 0.42, angle: 18 },
+            { scale: 0.44, angle: -16 },
+            { scale: 0.38, angle: 20 },
+            { scale: 0.36, angle: -20 }
         ];
 
         stars.forEach((star, index) => {
             const path = paths[index % paths.length];
-            const startPos = new Vec3(centerPos.x + path.start.x, centerPos.y + path.start.y, 0);
-            const middlePos = new Vec3(
-                centerPos.x + path.start.x + (path.end.x - path.start.x) * 0.45,
-                centerPos.y + path.start.y + (path.end.y - path.start.y) * 0.45,
-                0
-            );
-            const endPos = new Vec3(centerPos.x + path.end.x, centerPos.y + path.end.y, 0);
             const opacity = star.getComponent(UIOpacity) ?? star.addComponent(UIOpacity);
 
             star.active = true;
-            star.setPosition(startPos);
-            star.setScale(new Vec3(0.24, 0.24, 1));
+            star.setScale(new Vec3(path.scale, path.scale, 1));
             star.angle = path.angle * 0.35;
             opacity.opacity = 0;
 
             tween(star)
-                .delay(index * 0.035)
-                .to(0.14, {
-                    position: middlePos,
-                    scale: new Vec3(path.scale, path.scale, 1),
-                    angle: path.angle
-                }, { easing: 'quadOut' })
-                .to(0.28, {
-                    position: endPos,
-                    scale: new Vec3(path.scale * 0.42, path.scale * 0.42, 1),
-                    angle: path.angle + (path.angle > 0 ? 42 : -42)
-                }, { easing: 'quadIn' })
-                .call(() => {
-                    if (star.isValid) {
-                        star.active = false;
-                    }
-                    opacity.opacity = 0;
-                })
+                .delay(index * 0.08)
+                .repeatForever(
+                    tween()
+                        .to(0.55, {
+                            scale: new Vec3(path.scale * 1.16, path.scale * 1.16, 1),
+                            angle: path.angle
+                        }, { easing: 'sineOut' })
+                        .to(0.75, {
+                            scale: new Vec3(path.scale * 0.72, path.scale * 0.72, 1),
+                            angle: path.angle + (path.angle > 0 ? 18 : -18)
+                        }, { easing: 'sineIn' })
+                        .to(0.45, {
+                            scale: new Vec3(path.scale, path.scale, 1),
+                            angle: path.angle * 0.35
+                        }, { easing: 'sineOut' })
+                )
                 .start();
 
             tween(opacity)
-                .delay(index * 0.035)
-                .to(0.08, { opacity: 235 }, { easing: 'quadOut' })
-                .delay(0.1)
-                .to(0.24, { opacity: 0 }, { easing: 'quadOut' })
+                .delay(index * 0.08)
+                .repeatForever(
+                    tween()
+                        .to(0.35, { opacity: 180 }, { easing: 'sineOut' })
+                        .to(0.75, { opacity: 70 }, { easing: 'sineIn' })
+                        .to(0.45, { opacity: 120 }, { easing: 'sineOut' })
+                )
                 .start();
         });
     }
 
     private stopRewardPopupEffects() {
+        const popupLayer = this.rewardPopupLayer?.isValid ? this.rewardPopupLayer : null;
+        const resetNodes = [
+            this.findNodeByPaths(['PopupPanel/GetResourceNode/TitleLabel'], popupLayer),
+            this.findNodeByPaths(['PopupPanel/GetResourceNode/ButtonsNode'], popupLayer),
+            this.findNodeByPaths(['PopupPanel/GetResourceNode/RewardNode/DescNode'], popupLayer)
+        ];
+        for (const node of resetNodes) {
+            if (!node?.isValid) {
+                continue;
+            }
+
+            Tween.stopAllByTarget(node);
+            node.setScale(new Vec3(1, 1, 1));
+
+            const opacity = node.getComponent(UIOpacity);
+            if (opacity) {
+                Tween.stopAllByTarget(opacity);
+                opacity.opacity = 255;
+            }
+        }
+
         if (this.rewardPopupItemSprite?.node?.isValid) {
             const itemNode = this.rewardPopupItemSprite.node;
             Tween.stopAllByTarget(itemNode);
@@ -2570,24 +2820,9 @@ export class ActivityPopupRoot extends BaseUI {
             star.angle = 0;
             star.setScale(new Vec3(0.35, 0.35, 1));
         }
-    }
 
-    private liftRewardPopupStarsAboveItem(starRoot: Node) {
-        const itemNode = this.rewardPopupItemSprite?.node ?? null;
-        const itemParent = itemNode?.parent ?? null;
-        if (!itemParent?.isValid || !itemNode?.isValid) {
-            return;
-        }
-
-        if (starRoot.parent !== itemParent) {
-            starRoot.setParent(itemParent, true);
-        }
-
-        const nextIndex = Math.min(
-            itemParent.children.length - 1,
-            itemNode.getSiblingIndex() + 1
-        );
-        starRoot.setSiblingIndex(nextIndex);
+        this.resetRewardPopupFlyNodes(this.rewardPopupGoldFlySprites, this.rewardPopupGoldFlyNode);
+        this.resetRewardPopupFlyNodes(this.rewardPopupDiamondFlySprites, this.rewardPopupDiamondFlyNode);
     }
 
     private normalizeRewardType(rewardType?: string) {
@@ -2610,11 +2845,12 @@ export class ActivityPopupRoot extends BaseUI {
         }
 
         const [receive, received] = await Promise.all([
-            this.loadSpriteFrame('tool/receive/spriteFrame'),
-            this.loadSpriteFrame('tool/seceived/spriteFrame')
+            this.loadSpriteFrame('image/receive/spriteFrame'),
+            this.loadSpriteFrame('image/seceived/spriteFrame')
         ]);
         this.receiveSpriteFrame = receive;
         this.receivedSpriteFrame = received;
+        this.refreshVisibleLevelRewardButtons();
     }
 
     private preloadLevelRewardAssets() {
@@ -2634,20 +2870,22 @@ export class ActivityPopupRoot extends BaseUI {
     private async loadLevelRewardAssets() {
         const [, coinReward, diamondReward] = await Promise.all([
             this.loadRewardButtonSpriteFrames(),
-            this.loadSpriteFrame('tool/coin_reward/spriteFrame'),
-            this.loadSpriteFrame('tool/diamond_bg/spriteFrame')
+            this.loadSpriteFrame('image/coin_reward/spriteFrame'),
+            this.loadSpriteFrame('image/diamond_bg/spriteFrame')
         ]);
         this.levelRewardGoldSpriteFrame = coinReward;
         this.levelRewardDiamondSpriteFrame = diamondReward;
     }
 
     private async loadRewardPopupEffectAssets() {
-        const [halo, star] = await Promise.all([
-            this.loadSpriteFrame('tool/reward/halo_ring/spriteFrame'),
-            this.loadSpriteFrame('tool/reward/star/spriteFrame')
+        const [halo, star, light] = await Promise.all([
+            this.loadSpriteFrame('image/reward/halo_ring/spriteFrame'),
+            this.loadSpriteFrame('image/reward/star/spriteFrame'),
+            this.loadSpriteFrame('image/reward/reward_light/spriteFrame')
         ]);
         this.rewardPopupHaloSpriteFrame = halo;
         this.rewardPopupStarSpriteFrame = star;
+        this.rewardPopupLightSpriteFrame = light;
     }
 
     private applyLevelRewardSpriteFrameByType(rewardSprite: Sprite | null, rewardTypeValue?: string) {
@@ -2671,16 +2909,7 @@ export class ActivityPopupRoot extends BaseUI {
     }
 
     private loadSpriteFrame(path: string): Promise<SpriteFrame | null> {
-        return new Promise(resolve => {
-            resources.load(path, SpriteFrame, (error, spriteFrame) => {
-                if (error) {
-                    console.warn(`[ActivityPopupRoot] Load sprite frame failed: ${path}`, error);
-                    resolve(null);
-                    return;
-                }
-                resolve(spriteFrame);
-            });
-        });
+        return BundleResourceLoader.loadSpriteFrame(path);
     }
 
     private refreshRewardScrollView(resetToTop: boolean) {
@@ -2823,6 +3052,7 @@ export class ActivityPopupRoot extends BaseUI {
         this.rewardScrollView.horizontal = false;
         this.rewardScrollView.vertical = scrollable;
         this.rewardScrollView.elastic = false;
+        this.rewardScrollView.bounceDuration = 0;
         this.rewardScrollView.inertia = false;
         this.rewardScrollView.horizontalScrollBar = null;
         this.rewardScrollView.verticalScrollBar = null;
@@ -2905,7 +3135,7 @@ export class ActivityPopupRoot extends BaseUI {
             'RewardPopupLayer',
             'RewardPoptoRoot/RewardPopupLayer'
         ], canvas);
-        this.rewardPopupLayer = namedRewardPopupLayer?.getChildByPath('PopupPanel/ResourcesPanel')
+        this.rewardPopupLayer = namedRewardPopupLayer?.getChildByPath('PopupPanel/GetResourceNode')
             ? namedRewardPopupLayer
             : this.findRewardPopupLayerByStructure(canvas);
         this.rewardPopupRoot = this.rewardPopupLayer?.parent?.name === 'RewardPoptoRoot'
@@ -2917,26 +3147,34 @@ export class ActivityPopupRoot extends BaseUI {
             return;
         }
 
-        this.rewardPopupStarEffectNode = this.findNodeByPaths(['PopupPanel/RewardNode/StarEffectNode'], popupLayer);
-        this.rewardPopupStarGroupNode = this.findNodeByPaths([
-            'PopupPanel/RewardNode/StarEffectNode/StarGroupNode',
-            'PopupPanel/RewardNode/StarGroupNode'
-        ], popupLayer);
-        this.rewardPopupHaloRingSprite = this.findNodeByPaths(['PopupPanel/RewardNode/StarEffectNode/HaloRingSprite'], popupLayer);
-        this.rewardPopupLightSprite = this.findNodeByPaths([
-            'PopupPanel/RewardNode/StarEffectNode/LightSprite',
-            'PopupPanel/RewardNode/LightSprite'
-        ], popupLayer);
-        this.rewardPopupItemSprite = this.findComponentByPaths(['PopupPanel/RewardNode/ItemSprite'], Sprite, popupLayer);
-        this.rewardPopupGoldIcon = this.findComponentByPaths(['PopupPanel/ResourcesPanel/GoldPanel/GoldIcon'], Sprite, popupLayer);
-        this.rewardPopupDiamondIcon = this.findComponentByPaths(['PopupPanel/ResourcesPanel/DiamondPanel/DiamondIcon'], Sprite, popupLayer);
-        this.rewardPopupStandardButton = this.findNodeByPaths(['PopupPanel/ButtonsNode/StandardButton'], popupLayer);
-        this.rewardPopupDoubleButton = this.findNodeByPaths(['PopupPanel/ButtonsNode/DoubleButton'], popupLayer);
-        this.rewardPopupTenTimeButton = this.findNodeByPaths([
-            'PopupPanel/ButtonsNode/FiveTimesNode',
-            'PopupPanel/ButtonsNode/TenTimeButton'
-        ], popupLayer);
+        this.rewardPopupStarEffectNode = null;
+        this.rewardPopupStarGroupNode = this.findNodeByPaths(['PopupPanel/GetResourceNode/RewardNode/StarGroupNode'], popupLayer);
+        this.rewardPopupHaloRingSprite = this.findNodeByPaths(['PopupPanel/GetResourceNode/RewardNode/HaloRingSprite'], popupLayer);
+        this.rewardPopupLightSprite = this.findNodeByPaths(['PopupPanel/GetResourceNode/RewardNode/LightSprite'], popupLayer);
+        this.rewardPopupGetResourceNode = this.findNodeByPaths(['PopupPanel/GetResourceNode'], popupLayer);
+        this.rewardPopupFlyNode = this.findNodeByPaths(['PopupPanel/FlyNode'], popupLayer);
+        this.rewardPopupFlyEffectNode = this.findNodeByPaths(['PopupPanel/FlyNode/FlyEffectNode'], popupLayer);
+        this.rewardPopupGoldFlyNode = this.findNodeByPaths(['PopupPanel/FlyNode/FlyEffectNode/GoldFlyNode'], popupLayer);
+        this.rewardPopupDiamondFlyNode = this.findNodeByPaths(['PopupPanel/FlyNode/FlyEffectNode/DiamondFlyNode'], popupLayer);
+        this.rewardPopupGoldFlySprites = this.collectRewardPopupFlySprites(this.rewardPopupGoldFlyNode, 'GoldFly');
+        this.rewardPopupDiamondFlySprites = this.collectRewardPopupFlySprites(this.rewardPopupDiamondFlyNode, 'DiamondFly');
+        this.rewardPopupItemSprite = this.findComponentByPaths(['PopupPanel/GetResourceNode/RewardNode/ItemSprite'], Sprite, popupLayer);
+        this.rewardPopupGoldIcon = this.findComponentByPaths(['PopupPanel/FlyNode/ResourcesPanel/GoldPanel/GoldIcon'], Sprite, popupLayer);
+        this.rewardPopupDiamondIcon = this.findComponentByPaths(['PopupPanel/FlyNode/ResourcesPanel/DiamondPanel/DiamondIcon'], Sprite, popupLayer);
+        this.rewardPopupStandardButton = this.findNodeByPaths(['PopupPanel/GetResourceNode/ButtonsNode/StandardButton'], popupLayer);
+        this.rewardPopupDoubleButton = this.findNodeByPaths(['PopupPanel/GetResourceNode/ButtonsNode/DoubleButton'], popupLayer);
+        this.rewardPopupTenTimeButton = this.findNodeByPaths(['PopupPanel/GetResourceNode/ButtonsNode/FiveTimesNode'], popupLayer);
         this.bindRewardPopupRuntimeEvents();
+    }
+
+    private collectRewardPopupFlySprites(root: Node | null, prefix: string): Node[] {
+        if (!root?.isValid) {
+            return [];
+        }
+
+        return root.children
+            .filter(child => child.isValid && child.name.startsWith(prefix) && !!child.getComponent(Sprite))
+            .sort((left, right) => left.name.localeCompare(right.name));
     }
 
     private bindActivityPopupRuntimeEvents() {
@@ -2981,6 +3219,12 @@ export class ActivityPopupRoot extends BaseUI {
             'ButtonNode/ReceiveButton',
             'ReceiveButton'
         ], () => void this.onDailyCheckInReceiveButtonClick());
+        this.bindOptionalButtonByPaths(this.dailyCheckInPopupLayer, [
+            'PopupPanel/ButtonNode/DoubleReceiveButton',
+            'PopupPanel/DoubleReceiveButton',
+            'ButtonNode/DoubleReceiveButton',
+            'DoubleReceiveButton'
+        ], () => void this.onDailyCheckInDoubleReceiveButtonClick());
         this.bindButtonByPaths(this.dailyCheckInPopupLayer, [
             'PopupPanel/CloseButton',
             'CloseButton'
@@ -3005,6 +3249,13 @@ export class ActivityPopupRoot extends BaseUI {
         this.bindButton(node, callback);
     }
 
+    private bindOptionalButtonByPaths(root: Node | null, paths: string[], callback: () => void) {
+        const node = this.findNodeByPaths(paths, root);
+        if (node?.isValid) {
+            this.bindButton(node, callback);
+        }
+    }
+
     private bindButton(node: Node | null | undefined, callback: () => void) {
         if (!node?.isValid || !node.getComponent(Button)) {
             return;
@@ -3018,9 +3269,10 @@ export class ActivityPopupRoot extends BaseUI {
             return null;
         }
 
-        const isRewardPopupLayer = !!root.getChildByPath('PopupPanel/ResourcesPanel')
-            && !!root.getChildByPath('PopupPanel/RewardNode/DescNode/CountLabel')
-            && !!root.getChildByPath('PopupPanel/ButtonsNode/StandardButton');
+        const isRewardPopupLayer = !!root.getChildByPath('PopupPanel/GetResourceNode')
+            && !!root.getChildByPath('PopupPanel/GetResourceNode/RewardNode/DescNode/CountLabel')
+            && !!root.getChildByPath('PopupPanel/GetResourceNode/ButtonsNode/StandardButton')
+            && !!root.getChildByPath('PopupPanel/FlyNode/FlyEffectNode');
         if (isRewardPopupLayer) {
             return root;
         }
@@ -3035,33 +3287,32 @@ export class ActivityPopupRoot extends BaseUI {
         return null;
     }
 
-    private async ensureActivityPopupPrefabNodes() {
+    private async ensureActivityPopupPrefabNodes(popupNames?: string[]) {
         if (!this.node?.isValid) {
             return;
         }
 
         this.sanitizePopupLayerRefs();
+        const shouldLoad = (popupName: string) => !popupNames || popupNames.indexOf(popupName) >= 0;
 
         const [
             levelRewardPopupLayer,
             bountyTaskPopupLayer,
             changeTaskPopupLayer,
-            dailyCheckInPopupLayer,
-            rewardPopupLayer
+            dailyCheckInPopupLayer
         ] = await Promise.all([
-            PopupPrefabLoader.ensurePopupNode(this.node, 'LevelRewardPopupLayer'),
-            PopupPrefabLoader.ensurePopupNode(this.node, 'BountyTaskPopupLayer'),
-            PopupPrefabLoader.ensurePopupNode(this.node, 'ChangeTaskPopupLayer'),
-            PopupPrefabLoader.ensurePopupNode(this.node, 'DailyCheckInPopupLayer'),
-            PopupPrefabLoader.ensurePopupNode(this.node, 'RewardPopupLayer')
+            shouldLoad('LevelRewardPopupLayer') ? PopupPrefabLoader.ensurePopupNode(this.node, 'LevelRewardPopupLayer') : Promise.resolve(null),
+            shouldLoad('BountyTaskPopupLayer') ? PopupPrefabLoader.ensurePopupNode(this.node, 'BountyTaskPopupLayer') : Promise.resolve(null),
+            shouldLoad('ChangeTaskPopupLayer') ? PopupPrefabLoader.ensurePopupNode(this.node, 'ChangeTaskPopupLayer') : Promise.resolve(null),
+            shouldLoad('DailyCheckInPopupLayer') ? PopupPrefabLoader.ensurePopupNode(this.node, 'DailyCheckInPopupLayer') : Promise.resolve(null)
         ]);
 
-        this.levelRewardPopupLayer = this.isMountedPopupLayer(this.levelRewardPopupLayer) ? this.levelRewardPopupLayer : levelRewardPopupLayer;
-        this.bountyTaskPopupLayer = this.isMountedPopupLayer(this.bountyTaskPopupLayer) ? this.bountyTaskPopupLayer : bountyTaskPopupLayer;
-        this.changeTaskPopupLayer = this.isMountedPopupLayer(this.changeTaskPopupLayer) ? this.changeTaskPopupLayer : changeTaskPopupLayer;
-        this.dailyCheckInPopupLayer = this.isMountedPopupLayer(this.dailyCheckInPopupLayer) ? this.dailyCheckInPopupLayer : dailyCheckInPopupLayer;
-        this.rewardPopupLayer = this.isMountedPopupLayer(this.rewardPopupLayer) ? this.rewardPopupLayer : rewardPopupLayer;
+        this.levelRewardPopupLayer = this.isMountedPopupLayer(this.levelRewardPopupLayer) ? this.levelRewardPopupLayer : levelRewardPopupLayer ?? this.levelRewardPopupLayer;
+        this.bountyTaskPopupLayer = this.isMountedPopupLayer(this.bountyTaskPopupLayer) ? this.bountyTaskPopupLayer : bountyTaskPopupLayer ?? this.bountyTaskPopupLayer;
+        this.changeTaskPopupLayer = this.isMountedPopupLayer(this.changeTaskPopupLayer) ? this.changeTaskPopupLayer : changeTaskPopupLayer ?? this.changeTaskPopupLayer;
+        this.dailyCheckInPopupLayer = this.isMountedPopupLayer(this.dailyCheckInPopupLayer) ? this.dailyCheckInPopupLayer : dailyCheckInPopupLayer ?? this.dailyCheckInPopupLayer;
         this.resolveNodes();
+        this.resolveRewardPopupNodes();
     }
 
     private resolveNodes() {

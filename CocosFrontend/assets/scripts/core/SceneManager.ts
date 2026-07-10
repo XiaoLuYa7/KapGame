@@ -140,8 +140,16 @@ export class SceneManager {
         const rootNode = scene.getChildByName('Canvas');
         if (!rootNode) return;
 
-        // 查找继承 BaseUI 的组件
-        const uiComponents = rootNode.getComponentsInChildren(BaseUI);
+        // 查找继承 BaseUI 的组件。Battle 场景是纯画面节点时，运行时兜底挂载控制器。
+        let uiComponents = rootNode.getComponentsInChildren(BaseUI);
+        if (uiComponents.length === 0 && sceneName === SceneName.Battle) {
+            try {
+                const battleUI = (rootNode as any).addComponent('BattleUI') as BaseUI | null;
+                uiComponents = battleUI ? [battleUI] : [];
+            } catch (error) {
+                console.warn('[SceneManager] Failed to attach BattleUI:', error);
+            }
+        }
         uiComponents.forEach(ui => {
             if (ui.getSceneName() === sceneName || ui.getSceneName() === rootNode.name) {
                 SceneManager._currentScene = ui;

@@ -14,11 +14,14 @@ export interface GameState {
     yourPlayerIndex: number;
     handCards: string[];
     isYourTurn: boolean;
+    matchType?: string;
+    roomLevel?: string;
 }
 
 export interface PlayerInfo {
     playerIndex: number;
     username: string;
+    avatarUrl?: string;
     hp: number;
     handCount: number;
     isAlive: boolean;

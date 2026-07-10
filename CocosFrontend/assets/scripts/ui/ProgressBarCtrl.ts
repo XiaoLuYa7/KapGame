@@ -18,8 +18,20 @@ export class ProgressBarCtrl extends Component {
     @property(Sprite)
     barFill: Sprite | null = null;
 
+    @property(Node)
+    safetyKeySlider: Node | null = null;
+
+    @property({ type: [Node] })
+    gearTicks: Node[] = [];
+
     @property
-    fillSpritePath: string = 'progress/progress_fill/spriteFrame';
+    sliderTravelPadding: number = 0;
+
+    @property
+    gearRotateSpeed: number = 120;
+
+    @property
+    fillSpritePath: string = 'image/loading/loading_bar_fill/spriteFrame';
 
     @property
     fillWidth: number = 900;
@@ -62,8 +74,9 @@ export class ProgressBarCtrl extends Component {
     private fillFullHeight = 0;
     private fillLeftX = 0;
     private fillY = 0;
-    private fillScaleX = 1;
-    private fillScaleY = 1;
+    private sliderStartX = 0;
+    private sliderEndX = 0;
+    private sliderY = 0;
     private fillConfigured = false;
 
     onLoad() {
@@ -225,26 +238,40 @@ export class ProgressBarCtrl extends Component {
     private applyProgress(percent: number) {
         this.progress = Math.max(0, Math.min(100, percent));
 
-        this.updateFillScale(this.progress / 100);
+        const normalizedProgress = this.progress / 100;
+        this.updateFillSize(normalizedProgress);
+        this.updateSliderPosition(normalizedProgress);
 
         if (this.progressBar) {
-            this.progressBar.progress = this.progress / 100;
+            this.progressBar.progress = normalizedProgress;
         }
 
         const label = this.progressLabel ?? this.percentLabel;
         if (label) {
-            label.string = `${Math.floor(this.progress)}%`;
+            label.string = `加载中 ${Math.floor(this.progress)}%`;
         }
     }
 
     private resolveNodes() {
         this.frameBg ??= this.node.getChildByName('FrameBg')?.getComponent(Sprite) ?? null;
+        this.frameBg ??= this.findNode('BarFrame')?.getComponent(Sprite) ?? null;
         this.barMask ??= this.node.getChildByName('BarMask');
+        this.barMask ??= this.findNode('BarFillMask');
         this.barFill ??= this.node.getChildByPath('BarMask/BarFill')?.getComponent(Sprite) ?? null;
+        this.barFill ??= this.findNode('BarFill')?.getComponent(Sprite) ?? null;
+        this.safetyKeySlider ??= this.findNode('SafetyKeySlider');
         this.progressLabel ??= this.node.getChildByName('ProgressLabel')?.getComponent(Label) ?? null;
         this.percentLabel ??= this.node.getChildByName('PercentLabel')?.getComponent(Label) ?? null;
         this.percentLabel ??= this.node.getChildByName('PercentLabe')?.getComponent(Label) ?? null;
+        this.progressLabel ??= this.findNode('LoadingText')?.getComponent(Label) ?? null;
         this.progressBar ??= this.getComponent(ProgressBar);
+
+        if (this.gearTicks.length === 0) {
+            const gearRoot = this.findNode('GearTicks');
+            if (gearRoot) {
+                this.gearTicks = gearRoot.children.slice();
+            }
+        }
     }
 
     private setupBarFill() {
@@ -254,7 +281,7 @@ export class ProgressBarCtrl extends Component {
             return;
         }
 
-        console.error('[ProgressBarCtrl] BarFill node is missing. Expected: ProgressBar/BarMask/BarFill');
+        console.error('[ProgressBarCtrl] BarFill node is missing. Expected: LoadingGroup/BarFillMask/BarFill');
     }
 
     private configureBarFill() {
@@ -263,37 +290,79 @@ export class ProgressBarCtrl extends Component {
         }
 
         const transform = this.barFill.getComponent(UITransform);
-        const width = transform?.width ?? this.fillWidth;
+        const maskTransform = this.barMask?.getComponent(UITransform) ?? null;
+        const width = maskTransform?.width ?? transform?.width ?? this.fillWidth;
         const height = transform?.height ?? this.fillHeight;
 
         this.barFill.color = Color.WHITE;
         this.barFill.sizeMode = Sprite.SizeMode.CUSTOM;
 
         if (!this.fillConfigured && transform && width > 0 && height > 0) {
-            const position = this.barFill.node.position;
-            const scale = this.barFill.node.scale;
             this.fillFullWidth = width;
             this.fillFullHeight = height;
-            this.fillLeftX = position.x - width * transform.anchorX;
-            this.fillY = position.y;
-            this.fillScaleX = scale.x;
-            this.fillScaleY = scale.y;
-
+            this.fillLeftX = -(maskTransform?.width ?? width) * (maskTransform?.anchorX ?? 0.5);
+            this.fillY = this.barFill.node.position.y + this.fillOffsetY;
             transform.setAnchorPoint(0, transform.anchorY);
-            this.barFill.node.setPosition(this.fillLeftX, this.fillY, position.z);
-            transform.setContentSize(width, height);
+            this.barFill.node.setPosition(this.fillLeftX + this.fillOffsetX, this.fillY, this.barFill.node.position.z);
+            this.barFill.node.setScale(1, 1, this.barFill.node.scale.z);
+            transform.setContentSize(0.001, height);
+            this.configureSliderRange(maskTransform);
             this.fillConfigured = true;
         }
     }
 
-    private updateFillScale(progress: number) {
+    private updateFillSize(progress: number) {
         if (!this.barFill || !this.fillConfigured) {
             return;
         }
 
-        const scaleX = this.fillScaleX * Math.max(0.001, Math.min(1, progress));
-        this.barFill.node.setScale(scaleX, this.fillScaleY, this.barFill.node.scale.z);
-        this.barFill.node.setPosition(this.fillLeftX, this.fillY, this.barFill.node.position.z);
+        const transform = this.barFill.getComponent(UITransform);
+        if (!transform) {
+            return;
+        }
+
+        const width = this.fillFullWidth * Math.max(0.001, Math.min(1, progress));
+        transform.setContentSize(width, this.fillFullHeight);
+        this.barFill.node.setPosition(this.fillLeftX + this.fillOffsetX, this.fillY, this.barFill.node.position.z);
+    }
+
+    private configureSliderRange(maskTransform: UITransform | null) {
+        if (!this.barMask || !maskTransform) {
+            return;
+        }
+
+        const maskPosition = this.barMask.position;
+        const left = maskPosition.x - maskTransform.width * maskTransform.anchorX + this.sliderTravelPadding;
+        const right = maskPosition.x + maskTransform.width * (1 - maskTransform.anchorX) - this.sliderTravelPadding;
+
+        this.sliderStartX = left;
+        this.sliderEndX = right;
+        this.sliderY = this.safetyKeySlider?.position.y ?? maskPosition.y;
+    }
+
+    private updateSliderPosition(progress: number) {
+        if (!this.safetyKeySlider || !this.fillConfigured) {
+            return;
+        }
+
+        const clampedProgress = Math.max(0, Math.min(1, progress));
+        const x = this.sliderStartX + (this.sliderEndX - this.sliderStartX) * clampedProgress;
+        this.safetyKeySlider.setPosition(x, this.sliderY, this.safetyKeySlider.position.z);
+    }
+
+    private findNode(name: string, root: Node = this.node): Node | null {
+        if (root.name === name) {
+            return root;
+        }
+
+        for (const child of root.children) {
+            const found = this.findNode(name, child);
+            if (found) {
+                return found;
+            }
+        }
+
+        return null;
     }
 
     private loadFillSpriteFrameIfNeeded() {
@@ -327,6 +396,21 @@ export class ProgressBarCtrl extends Component {
 
     private delay(ms: number): Promise<void> {
         return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    update(deltaTime: number) {
+        if (this.gearTicks.length === 0 || this.gearRotateSpeed === 0) {
+            return;
+        }
+
+        const deltaAngle = this.gearRotateSpeed * deltaTime;
+        this.gearTicks.forEach((gear, index) => {
+            if (!gear?.isValid) {
+                return;
+            }
+
+            gear.angle += index % 2 === 0 ? deltaAngle : -deltaAngle;
+        });
     }
 
     onDestroy() {

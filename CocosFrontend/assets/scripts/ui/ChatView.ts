@@ -394,7 +394,7 @@ export class ChatView extends BaseUI {
 
     private getRankIconPath(item: ChatUserItem): string | null {
         if (item.rankIcon) {
-            return this.toSpriteFramePath(item.rankIcon, 'tool/rank');
+            return this.toSpriteFramePath(item.rankIcon, 'image/rank');
         }
 
         const rank = item.rank || '';
@@ -410,12 +410,12 @@ export class ChatView extends BaseUI {
         ];
 
         const match = rankMap.find(([pattern]) => pattern.test(rank));
-        return match ? `tool/rank/${match[1]}/spriteFrame` : null;
+        return match ? `image/rank/${match[1]}/spriteFrame` : null;
     }
 
     private getCharmIconPath(item: ChatUserItem): string | null {
         if (item.charmIcon) {
-            return this.toSpriteFramePath(item.charmIcon, 'tool/charm');
+            return this.toSpriteFramePath(item.charmIcon, 'image/charm');
         }
 
         return null;
@@ -491,14 +491,14 @@ export class ChatView extends BaseUI {
 
     private createRandomSocialBadgeData(): Pick<ChatUserItem, 'rank' | 'rankIcon' | 'charmIcon'> {
         const rankOptions = [
-            { name: '青铜', icon: 'tool/rank/bronze' },
-            { name: '白银', icon: 'tool/rank/silver' },
-            { name: '黄金', icon: 'tool/rank/gold' },
-            { name: '铂金', icon: 'tool/rank/platinum' },
-            { name: '钻石', icon: 'tool/rank/diamond' },
-            { name: '星耀', icon: 'tool/rank/starshine' },
-            { name: '大师', icon: 'tool/rank/master' },
-            { name: '王者', icon: 'tool/rank/king' }
+            { name: '青铜', icon: 'image/rank/bronze' },
+            { name: '白银', icon: 'image/rank/silver' },
+            { name: '黄金', icon: 'image/rank/gold' },
+            { name: '铂金', icon: 'image/rank/platinum' },
+            { name: '钻石', icon: 'image/rank/diamond' },
+            { name: '星耀', icon: 'image/rank/starshine' },
+            { name: '大师', icon: 'image/rank/master' },
+            { name: '王者', icon: 'image/rank/king' }
         ];
         const rank = rankOptions[Math.floor(Math.random() * rankOptions.length)];
         const charmLevel = Math.floor(Math.random() * 18) + 1;
@@ -506,7 +506,7 @@ export class ChatView extends BaseUI {
         return {
             rank: rank.name,
             rankIcon: rank.icon,
-            charmIcon: `tool/charm/charm${charmLevel < 10 ? `0${charmLevel}` : charmLevel}`
+            charmIcon: `image/charm/charm${charmLevel < 10 ? `0${charmLevel}` : charmLevel}`
         };
     }
 
@@ -537,14 +537,14 @@ export class ChatView extends BaseUI {
     }
 
     private loadTabFrames() {
-        resources.load('tool/chat/chat_select_tag/spriteFrame', SpriteFrame, (error, frame) => {
+        resources.load('image/chat/chat_select_tag/spriteFrame', SpriteFrame, (error, frame) => {
             if (!error && frame) {
                 this.selectedTabFrame = frame;
                 this.syncTabState(this.currentTab);
             }
         });
 
-        resources.load('tool/chat/chat_unselect_tag/spriteFrame', SpriteFrame, (error, frame) => {
+        resources.load('image/chat/chat_unselect_tag/spriteFrame', SpriteFrame, (error, frame) => {
             if (!error && frame) {
                 this.unselectedTabFrame = frame;
                 this.syncTabState(this.currentTab);
@@ -652,6 +652,14 @@ export class ChatView extends BaseUI {
         if (content && scrollView.content !== content) {
             scrollView.content = content;
         }
+
+        scrollView.stopAutoScroll();
+        scrollView.horizontal = false;
+        scrollView.vertical = true;
+        scrollView.elastic = false;
+        scrollView.bounceDuration = 0;
+        scrollView.inertia = true;
+        scrollView.enabled = true;
 
         const verticalBar = scrollView.verticalScrollBar;
         if (verticalBar && (!verticalBar.node || !(verticalBar as any).handle)) {
